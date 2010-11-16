@@ -1,0 +1,8 @@
+sudo apt-get install alex happy zeromq-haskell cabal-install
+
+cabal install cabal-install
+cabal install protocol-buffers
+cabal install attoparsec
+
+zeromq from source
+ghc from source

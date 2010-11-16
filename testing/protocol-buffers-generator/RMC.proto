@@ -1,0 +1,35 @@
+message RMC {
+  optional RMCTime 	 time	 	= 1;
+  optional string  	 status		= 2;
+  required RMCLocation 	 location	= 3;
+  optional double 	 speed		= 4;
+  optional double 	 sDirection	= 5;
+  optional RMCDate 	 date		= 6;
+  optional double 	 mDecl		= 7;
+  optional string	 mDeclDir 	= 8;
+  optional string	 modeIndicator	= 9;
+}
+
+message RMCTime {
+  required int32 	rmcHours 	= 1;
+  required int32 	rmcMinutes 	= 2;
+  required double 	rmcSeconds 	= 3;
+}
+
+message RMCDate {
+  required int32 	day 	= 1;
+  required int32 	month 	= 2;
+  required int32 	year 	= 3;
+}
+
+message RMCLocation {
+  optional Angle 	latitude	= 1;
+  optional string 	p		= 2;
+  optional Angle 	longitude	= 3;
+  optional string 	j		= 4;
+}
+
+message Angle {
+  required int32 	degree 	= 1;
+  required double 	minute 	= 2;
+}
