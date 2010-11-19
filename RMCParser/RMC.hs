@@ -1,11 +1,6 @@
-module NMEA.RMC where
+module RMCParser.RMC where
 
 import RMCProtobuf.RMC.RMC
-import RMCProtobuf.RMC.RMCLocation
-import RMCProtobuf.RMC.RMCTime
-import RMCProtobuf.RMC.RMCDate
-import RMCProtobuf.RMC.Angle
--- TODO
 
 import 			Control.Applicative((<|>)) 		-- for <|> operator
 
@@ -29,13 +24,15 @@ parseRMC = processResult . parse rmcParser
           processResult res@(Done _ _)		= res
 
 -- every field may be empty(except "$GPRMC,", \13 and checkSum) but must be correct
--- mode indicator with (or without) comma may be missed
-
+-- mode indicator with (or without) comma may be omitted
 rmcParser :: Parser (RMC, Int)
 rmcParser = do preludeString "$GPRMC,"
                time		<- timeParser
                status		<- commaThen (many $ oneOf "AV")
-               location 	<- commaThen locationParser
+
+               -- todo
+               (lati, longi) 	<- commaThen locationParser
+
                speed		<- commaThen float
                sDirection	<- commaThen float
                date		<- commaThen dateParser
@@ -45,14 +42,14 @@ rmcParser = do preludeString "$GPRMC,"
                                       <|> do { char ','
                                              ; m' <- oneOf "ADEN"
                                              ; char '*'
-                                             ; return $ Just $ uFromString [m']}
+                                             ; return $ Just [m']}
                                       <|> do { char '*'; 	return Nothing}
                checkSum		<- 2 `count` hex
                -- EOl must be at the end
                do P.try $ do {cr; lf}	
                   <|> cr
-               return $ (RMC time (maybeRead status) location (maybeRead speed)
-                         (maybeRead sDirection) date (maybeRead mDecl) (maybeRead mDeclDir) m,
+               return $ (RMC time (maybeRead status) lati longi (maybeRead speed)
+                         (maybeRead sDirection) date (maybeRead mDecl) (maybeRead mDeclDir) (m >>= maybeRead),
                          readHex checkSum)
                    where cr = char $ chr 0x0d
                          lf = char $ chr 0x0a
@@ -66,28 +63,29 @@ hex = oneOf ['A' .. 'F'] <|> oneOf ['a' .. 'v'] <|> digit
 
 commaThen p = char ',' >> p
 
--- float = many $ digit <|> char '.'
+-- FIXME must much [0-9]{0,}\.[0-9]{0,}
 float :: Parser String
 float = do { c  <- P.try (digit <|> char '.')
            ; cs <- float
            ; return $ c:cs}
              <|> return ""
+-- float = many $ digit <|> char '.'
 
 oneOf :: String -> Parser Char
 oneOf [x]	= char x
 oneOf (x:xs) 	= char x <|> oneOf xs
 oneOf _		= error "oneOf: empty list"
+
 ----------------------------------------
-
-
-timeParser :: Parser (Maybe RMCTime)
+timeParser :: Parser (Maybe Double)
 timeParser = do { hours 		<- 2 `count` digit
                 ; minutes		<- 2 `count` digit
                 ; seconds		<- float
-                ; return $ Just $ RMCTime (read hours) (read minutes) (read seconds)
+                ; return $ Just $ mkTime (read hours) (read minutes) (read seconds)
                 } <|> return Nothing
+    where mkTime h m s = s + 60*m + 3600*h
 
-locationParser :: Parser RMCLocation
+locationParser :: Parser (Maybe Double, Maybe Double)
 locationParser = do latD	<- do 2 `count` digit
                                             <|> return ""
                     latM	<- float
@@ -96,29 +94,25 @@ locationParser = do latD	<- do 2 `count` digit
                                                        <|> return "")
                     lonM	<- float
                     j		<- commaThen (many $ oneOf "EW")
-                    return $ RMCLocation (mkAngle latD latM)
-                                         (maybeRead p)
-                                         (mkAngle lonD lonM)
-                                         (maybeRead j)
-    where mkAngle a b = if (a == "" &&
-                            b == "")
-                        then Nothing
-                        else Just $ Angle (read a) (read b)
+                    return $ (mkLat latD latM p,
+                              mkLon lonD lonM j)
+    where mkLat latD latM p | stringsIsNotEmpty [latD, latM, p] = Just $ ((read latD)*60 + (read latM)) *
+                                                                         if p == "N" then 1 else -1
+                            | otherwise				= Nothing
+          mkLon lonD lonM j | stringsIsNotEmpty [lonD, lonM, j] = Just $ ((read lonD)*60 + (read lonM)) *
+                                                                         if j == "E" then 1 else -1
+                            | otherwise				= Nothing
 
--- dateParser = undefined
+stringsIsNotEmpty :: [[Char]] -> Bool
+stringsIsNotEmpty = (/= 0) . product . map length
 
-dateParser :: Parser (Maybe RMCDate)
+dateParser :: Parser (Maybe Int32)
 dateParser = do { day	<- 2 `count` digit
                 ; month	<- 2 `count` digit
                 ; year	<- 2 `count` digit
-                ; return $ mkDate day month year
+                ; return $ Just $ mkDate (read day) (read month) (read year)
                 } <|> return Nothing
-    where mkDate a b c = if (a == "" &&
-                             b == "" &&
-                             c == "")
-                         then Nothing
-                         else Just $ RMCDate (read a) (read b) (read c)
-                        
+    where mkDate d m y = d + m*31 + y*31*12
 
 --------------------------------------------------------------------------------
 checkRMCSum :: String -> Int -> Bool
@@ -127,27 +121,11 @@ checkRMCSum input checkSum = xorBits (f input) == checkSum
           -- select part we need
           f = Prelude.takeWhile (/= '*') . tail . dropWhile (/= '$')
 
---------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------
 -- test = parseRMC . BSC8.pack
+-- Examples:
 
 -- test  "$GPRMC,125504.049,,5542.2389,N,03741.6063,E,0.06,25.82,200906,,E*3B\13"
-
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-
--- parseTest rmcParser "$GPRMC,125504.049,A,5542.2389,N,03741.6063,E,0.06,25.82,200906,,*3B\13"
--- parseTest locationParser "5542.2389,N,03741.6063,E"
--- 
--- parseRMC $ BSC8.pack  "$GPRMC,125504.049,,5542.2389,N,03741.6063,E,0.06,25.82,200906,,E*3B\13"
--- parseRMC $ BSC8.pack  "$GPRMC,125504.049,,5542.2389,N,03741.6063,E,0.06,25.82,,,E*3B\13"
--- parseRMC $ BSC8.pack  "$GPRMC,,V,,,,,,,080907,9.6,E,N*31\13"
--- parseRMC $ BSC8.pack  "$GPRMC,,,,,,,,,,,,N*31\13"
--- parseRMC $ BSC8.pack  "$GPRMC,,,,,,,,,,,,*31\13"
--- parseRMC $ BSC8.pack  "$GPRMC,,,,,,,,,,,E,E*31\13"
--- parseRMC $ BSC8.pack  "$GPRMC,,,,,,,,,,,E,*31\13"
--- parseRMC $ BSC8.pack  "$GPRMC,,,,,,,,,,,E*31\13"
-
 -- checkRMCSum "$GPRMC,125504.049,A,5542.2389,N,03741.6063,E,0.06,25.82,200906,,*3B" 0x3b
 -- checkRMCSum "$GPRMC,,V,,,,,,,080907,9.6,E,N*31" 0x31
