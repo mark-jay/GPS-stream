@@ -109,10 +109,10 @@ stringsIsNotEmpty = (/= 0) . product . map length
 dateParser :: Parser (Maybe Int32)
 dateParser = do { day	<- 2 `count` digit
                 ; month	<- 2 `count` digit
-                ; year	<- 2 `count` digit	-- 2 not 4 digit, + 2000
+                ; year	<- 2 `count` digit
                 ; return $ Just $ mkDate (read day) (read month) (read year)
                 } <|> return Nothing
-    where mkDate d m y = d + m*31 + (2000+y)*31*12
+    where mkDate d m y = d + m*31 + y*31*12
 
 --------------------------------------------------------------------------------
 checkRMCSum :: String -> Int -> Bool
