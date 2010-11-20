@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fglasgow-exts #-}
-module RMCProtobuf.RMC.RMC.MDeclDir (MDeclDir(..)) where
+module RMC.Protobuf.RMC.RMC.MDeclDir (MDeclDir(..)) where
 import Prelude ((+), (.))
 import qualified Prelude as P'
 import qualified Text.ProtocolBuffers.Header as P'
@@ -25,11 +25,11 @@ toMaybe'Enum _ = P'.Nothing
 instance P'.Enum MDeclDir where
   fromEnum E = 0
   fromEnum W = 1
-  toEnum = P'.fromMaybe (P'.error "hprotoc generated code: toEnum failure for type RMCProtobuf.RMC.RMC.MDeclDir") . toMaybe'Enum
+  toEnum = P'.fromMaybe (P'.error "hprotoc generated code: toEnum failure for type RMC.Protobuf.RMC.RMC.MDeclDir") . toMaybe'Enum
   succ E = W
-  succ _ = P'.error "hprotoc generated code: succ failure for type RMCProtobuf.RMC.RMC.MDeclDir"
+  succ _ = P'.error "hprotoc generated code: succ failure for type RMC.Protobuf.RMC.RMC.MDeclDir"
   pred W = E
-  pred _ = P'.error "hprotoc generated code: pred failure for type RMCProtobuf.RMC.RMC.MDeclDir"
+  pred _ = P'.error "hprotoc generated code: pred failure for type RMC.Protobuf.RMC.RMC.MDeclDir"
  
 instance P'.Wire MDeclDir where
   wireSize ft' enum = P'.wireSize ft' (P'.fromEnum enum)
@@ -47,6 +47,6 @@ instance P'.MessageAPI msg' (msg' -> MDeclDir) MDeclDir where
 instance P'.ReflectEnum MDeclDir where
   reflectEnum = [(0, "E", E), (1, "W", W)]
   reflectEnumInfo _
-   = P'.EnumInfo (P'.makePNF (P'.pack ".RMC.RMC.MDeclDir") ["RMCProtobuf"] ["RMC", "RMC"] "MDeclDir")
-      ["RMCProtobuf", "RMC", "RMC", "MDeclDir.hs"]
+   = P'.EnumInfo (P'.makePNF (P'.pack ".RMC.RMC.MDeclDir") ["RMC", "Protobuf"] ["RMC", "RMC"] "MDeclDir")
+      ["RMC", "Protobuf", "RMC", "RMC", "MDeclDir.hs"]
       [(0, "E"), (1, "W")]

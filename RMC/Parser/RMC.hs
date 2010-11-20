@@ -1,6 +1,6 @@
-module RMCParser.RMC where
+module RMC.Parser.RMC where
 
-import RMCProtobuf.RMC.RMC
+import RMC.Protobuf.RMC.RMC
 
 import 			Control.Applicative((<|>)) 		-- for <|> operator
 

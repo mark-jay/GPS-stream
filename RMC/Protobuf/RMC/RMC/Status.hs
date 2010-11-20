@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fglasgow-exts #-}
-module RMCProtobuf.RMC.RMC.Status (Status(..)) where
+module RMC.Protobuf.RMC.RMC.Status (Status(..)) where
 import Prelude ((+), (.))
 import qualified Prelude as P'
 import qualified Text.ProtocolBuffers.Header as P'
@@ -25,11 +25,11 @@ toMaybe'Enum _ = P'.Nothing
 instance P'.Enum Status where
   fromEnum A = 0
   fromEnum V = 1
-  toEnum = P'.fromMaybe (P'.error "hprotoc generated code: toEnum failure for type RMCProtobuf.RMC.RMC.Status") . toMaybe'Enum
+  toEnum = P'.fromMaybe (P'.error "hprotoc generated code: toEnum failure for type RMC.Protobuf.RMC.RMC.Status") . toMaybe'Enum
   succ A = V
-  succ _ = P'.error "hprotoc generated code: succ failure for type RMCProtobuf.RMC.RMC.Status"
+  succ _ = P'.error "hprotoc generated code: succ failure for type RMC.Protobuf.RMC.RMC.Status"
   pred V = A
-  pred _ = P'.error "hprotoc generated code: pred failure for type RMCProtobuf.RMC.RMC.Status"
+  pred _ = P'.error "hprotoc generated code: pred failure for type RMC.Protobuf.RMC.RMC.Status"
  
 instance P'.Wire Status where
   wireSize ft' enum = P'.wireSize ft' (P'.fromEnum enum)
@@ -47,6 +47,6 @@ instance P'.MessageAPI msg' (msg' -> Status) Status where
 instance P'.ReflectEnum Status where
   reflectEnum = [(0, "A", A), (1, "V", V)]
   reflectEnumInfo _
-   = P'.EnumInfo (P'.makePNF (P'.pack ".RMC.RMC.Status") ["RMCProtobuf"] ["RMC", "RMC"] "Status")
-      ["RMCProtobuf", "RMC", "RMC", "Status.hs"]
+   = P'.EnumInfo (P'.makePNF (P'.pack ".RMC.RMC.Status") ["RMC", "Protobuf"] ["RMC", "RMC"] "Status")
+      ["RMC", "Protobuf", "RMC", "RMC", "Status.hs"]
       [(0, "A"), (1, "V")]
