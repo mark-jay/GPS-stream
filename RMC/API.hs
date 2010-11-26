@@ -2,9 +2,22 @@ module RMC.API where
 
 import Data.Time
 import Control.Monad
+import Data.Bits(xor)
+import Data.Char(ord)
+import Data.ByteString.Internal(c2w, w2c)
+import qualified Data.ByteString.Char8 as BSC8
+import RMC.Protobuf.RMC.RMC 	       as RMC
+import qualified Data.ByteString       as BS
 
-import RMC.Protobuf.RMC.RMC 	as RMC
+calcRMCSum :: BS.ByteString -> Int
+calcRMCSum input = xorBits (f input)
+    where xorBits = foldl xor 0 . map ord . BSC8.unpack
+          -- select part we need
+          f = BS.takeWhile (/= c2w '*') . BS.tail . BS.dropWhile (/= c2w '$')
 
+--foldl xor 0 $ map ord $ BSC8.unpack $ f $ BSC8.pack "$GPRMC,125504.049,,5542.2389,N,03741.6063,E,0.06,25.82,200906,,E*3B\13"
+
+----------------------------------------
 rmcToDay :: RMC -> Maybe Day
 rmcToDay = liftM (f . fromIntegral) . date
     where f :: Int -> Day

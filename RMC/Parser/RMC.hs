@@ -1,8 +1,12 @@
 module RMC.Parser.RMC where
 
 import RMC.Protobuf.RMC.RMC
+import RMC.API
+import Doc
+import Utils
 
 import 			Control.Applicative((<|>)) 		-- for <|> operator
+import 			Control.Monad
 
 import 			Data.Attoparsec
 import 			Data.Attoparsec.Combinator
@@ -14,14 +18,21 @@ import qualified 	Data.ByteString as BS
 import qualified 	Data.ByteString.Char8 as BSC8
 import 			Data.Word
 import 			Data.Char
-import 			Network.CGI.Protocol(maybeRead)
-import 			Data.Bits(xor)
+import 			Utils(maybeRead)
 
-parseRMC :: BS.ByteString -> Result (RMC, Int)
-parseRMC = processResult . parse rmcParser
-    where processResult     (Fail a b c) 	= error $ concat ["Fail with", (show a), (show b), (show c)]
+import System.ZMQ as ZMQ
+
+parseRMC :: BS.ByteString -> Either String RMC
+parseRMC input = processResult $ parse rmcParser input
+    where processResult     (Fail a b c) 	= Left $ concat ["parseRMC fail with:'", (show c), (show b), (show a),"'"]
           processResult     (Partial fn) 	= processResult $ fn BS.empty
-          processResult res@(Done _ _)		= res
+          processResult res@(Done _ r)		= chsmCheck r 
+
+          chsmCheck (rmc, chsm) | checkRMCSum input chsm = 
+                                    Right rmc
+          chsmCheck (rmc, chsm) | otherwise 		 = 
+                                    Left $ "parseRMC fail: CheckSum error:'" ++ show rmc ++ 
+                                           ";\ncheckSum:" ++ show chsm ++ "'"
 
 -- every field may be empty(except "$GPRMC,", \13 and checkSum) but must be correct
 -- mode indicator with (or without) comma may be omitted
@@ -43,8 +54,8 @@ rmcParser = do preludeString "$GPRMC,"
                                              ; m' <- oneOf "ADEN"
                                              ; char '*'
                                              ; return $ Just [m']}
-                                      <|> do { char '*'; 	return Nothing}
-               checkSum		<- 2 `count` hex
+                                      <|> do { char '*'; 	return Nothing} 
+               checkSum		<- (2 `count` hex)
                -- EOl must be at the end
                do P.try $ do {cr; lf}	
                   <|> cr
@@ -59,7 +70,7 @@ readHex = read . ("0x" ++ )
 
 preludeString = string . BSC8.pack
 
-hex = oneOf ['A' .. 'F'] <|> oneOf ['a' .. 'v'] <|> digit
+hex = digit <|> oneOf ['A' .. 'F'] <|> oneOf ['a' .. 'v'] 
 
 commaThen p = char ',' >> p
 
@@ -115,17 +126,40 @@ dateParser = do { day	<- 2 `count` digit
     where mkDate d m y = d + m*31 + (2000+y)*31*12
 
 --------------------------------------------------------------------------------
-checkRMCSum :: String -> Int -> Bool
-checkRMCSum input checkSum = xorBits (f input) == checkSum
-    where xorBits = foldl xor 0 . map ord
-          -- select part we need
-          f = Prelude.takeWhile (/= '*') . tail . dropWhile (/= '$')
+checkRMCSum :: BS.ByteString -> Int -> Bool
+checkRMCSum input checkSum = calcRMCSum input == checkSum
 
+--------------------------------------------------------------------------------
+
+main :: [String] -> IO ()
+main args = do Doc.lengthArgsCheck args 0
+               Doc.helpInArgsCheck args helpAboutModule
+               
+               let connectTo = args !! 0
+               
+               context <- ZMQ.init 1 	-- size
+               sock <- socket context Pull
+               connect sock connectTo
+
+               -- FIXME not forever
+               forever $ do
+                 rmc <- receive sock []
+                 -- BSC8.appendFile "test.test" rmc
+                 
+               ZMQ.close sock
+               ZMQ.term context
+                 -- threadDelay 10000000
+               return ()
+
+helpAboutModule = usage ++ about
+
+usage = "usage: gps-stream tracker <addr>\nFor example:\n  " ++ 
+        "gps-stream tracker tcp://127.0.0.1:12345"
+
+about = ""
 
 --------------------------------------------------------------------------------
 -- test = parseRMC . BSC8.pack
 -- Examples:
 
--- test  "$GPRMC,125504.049,,5542.2389,N,03741.6063,E,0.06,25.82,200906,,E*3B\13"
--- checkRMCSum "$GPRMC,125504.049,A,5542.2389,N,03741.6063,E,0.06,25.82,200906,,*3B" 0x3b
--- checkRMCSum "$GPRMC,,V,,,,,,,080907,9.6,E,N*31" 0x31
+-- parseRMC . BSC8.pack $ "$GPRMC,125504.049,A,5542.2389,N,03741.6063,E,0.06,25.82,200906,,*3B\13\10"
