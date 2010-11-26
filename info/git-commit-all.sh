@@ -1,4 +1,5 @@
 cd /home/fallen/projects/haskell/GPS-stream/
+rm Main
 find . -type f -name "*#" -exec rm -f {} \;
 find . -type f -name "*~" -exec rm -f {} \;
 find . -type f -name "*.o" -exec rm -f {} \;
