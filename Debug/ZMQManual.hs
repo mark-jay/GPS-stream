@@ -4,15 +4,19 @@ import System.ZMQ as ZMQ
 import Utils
 import Control.Monad
 
+{- Only aim of this module is debug and trace -}
+
 -- sender
-main _ = do addr <- askFor "connect to what?"
-            
-            context <- ZMQ.init 1 	-- size
+main _ = do context <- ZMQ.init 1 	-- size
             sock <- socket context Pull
-            connect sock addr
+
+            addr <-  askFor "bind to what?"
+            bind sock addr
+            -- addr1 <- askFor "bind to what(2)?"
+            -- bind sock addr1
             
+            askFor "enter to receive"
             forever $ do
-              askFor "enter to receive"
               msg <- receive sock []
               print msg
               return ()

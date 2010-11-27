@@ -4,6 +4,7 @@ import RMC.Protobuf.RMC.RMC
 import RMC.API
 import Doc
 import Utils
+import Conf
 
 import 			Control.Applicative((<|>)) 		-- for <|> operator
 import 			Control.Monad
@@ -34,8 +35,8 @@ parseRMC input = processResult $ parse rmcParser input
                                     Left $ "parseRMC fail: CheckSum error:'" ++ show rmc ++ 
                                            ";\ncheckSum:" ++ show chsm ++ "'"
 
--- every field may be empty(except "$GPRMC,", \13 and checkSum) but must be correct
--- mode indicator with (or without) comma may be omitted
+{- every field may be empty(except "$GPRMC,", \13 and checkSum) but must be correct
+   mode indicator with (or without) comma may be omitted -}
 rmcParser :: Parser (RMC, Int)
 rmcParser = do preludeString "$GPRMC,"
                time		<- timeParser
@@ -120,7 +121,7 @@ stringsIsNotEmpty = (/= 0) . product . map length
 dateParser :: Parser (Maybe Int32)
 dateParser = do { day	<- 2 `count` digit
                 ; month	<- 2 `count` digit
-                ; year	<- 2 `count` digit	-- 2 not 4 digit, + 2000
+                ; year	<- 2 `count` digit	-- 2 not 4 digit, + 2000 years
                 ; return $ Just $ mkDate (read day) (read month) (read year)
                 } <|> return Nothing
     where mkDate d m y = d + m*31 + (2000+y)*31*12
@@ -132,26 +133,28 @@ checkRMCSum input checkSum = calcRMCSum input == checkSum
 --------------------------------------------------------------------------------
 
 main :: [String] -> IO ()
-main args = do Doc.lengthArgsCheck args 0
+main args = do Doc.lengthArgsAssert (length args > 0)
                Doc.helpInArgsCheck args helpAboutModule
                
-               let connectTo = args !! 0
+               let toBindN = args !! 0
+
+               Doc.naturalNumAssert toBindN "argument must be an integer"
+               Doc.addressExistAssert "parsers" (read toBindN)
+
+               toBind <- Conf.getAddr "parsers" (read toBindN)
                
                context <- ZMQ.init 1 	-- size
 
                iSock <- socket context Pull
-               connect iSock connectTo
-
-               oSock <- socket context Pub
-               
+               bind iSock toBind
 
                -- FIXME not forever
+               putStrLn $ "running parser on " ++ 
+                          show toBind ++ " ..."
                forever $ do
                  rmc <- receive iSock []
+                 print $ parseRMC rmc
                  return ()
-                 
-                 
-                 -- BSC8.appendFile "test.test" rmc
                  
                ZMQ.close iSock
                ZMQ.term context
@@ -160,8 +163,8 @@ main args = do Doc.lengthArgsCheck args 0
 
 helpAboutModule = usage ++ about
 
-usage = "usage: gps-stream tracker <addr>\nFor example:\n  " ++ 
-        "gps-stream tracker tcp://127.0.0.1:12345"
+usage = "usage: gps-stream parser <srv-addr>\nFor example:\n  " ++ 
+        "gps-stream parser tcp://127.0.0.1:12345"
 
 about = ""
 

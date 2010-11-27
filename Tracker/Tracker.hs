@@ -2,7 +2,8 @@ module Tracker.Tracker where
 
 import RMC.API(calcRMCSum)
 import qualified Doc
-import Utils
+import qualified Utils
+import qualified Conf
 
 import System.Random	
 import Control.Monad
@@ -94,18 +95,25 @@ dateGen = ioConcat [genFixedInt 	(1, 28),	-- day
 ------------------------------------------------------------------------------
 
 main :: [String] -> IO ()
-main args = do Doc.lengthArgsCheck args 0
+main args = do Doc.lengthArgsAssert (length args > 0)
                Doc.helpInArgsCheck args helpAboutModule
 
-               let addr = args !! 0
+               let addrN = args !! 0
+                   
+               Doc.naturalNumAssert addrN "argument must be an integer"
+               Doc.addressExistAssert "parsers" (read addrN)
+
+               addr <- Conf.getAddr "parsers" (read addrN)               
                           
                {- making connection -}
                context <- ZMQ.init 1 	-- size
                oSock <- socket context Push
-               bind oSock addr
+               connect oSock addr
 
-               {- starting server -}
-               replicateM_ 10000 $ do
+               {- sending to server -}
+               putStrLn $ "sending to parser on " ++ 
+                          show addr ++ " ..."
+               replicateM_ 1000 $ do
                  -- FIXME not forever
                  rmc <- genRMC
                  send oSock rmc []
@@ -117,7 +125,7 @@ main args = do Doc.lengthArgsCheck args 0
 
 helpAboutModule = usage ++ about
 
-usage = "usage: gps-stream tracker <addr>\nFor example:\n  " ++ 
-        "gps-stream tracker tcp://127.0.0.1:12345"
+usage = "usage: gps-stream tracker <number>\n  where <number> is number of parser you want " ++
+        "connect this tracker to For example:\n gps-stream tracker 0"
 
 about = ""

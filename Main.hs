@@ -7,9 +7,6 @@ import qualified Tracker.Tracker		as Tracker
 import qualified Doc
 import qualified Debug.ZMQManual		as ZMQMan
 
-
-
--- import Text.ProtocolBuffers.WireMessage
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BSC8
 import System.IO
@@ -20,11 +17,15 @@ import Data.Map((!))
 import qualified Data.List as List
 
 
-modules = Map.fromList [("tracker", Tracker.main),
-                        ("parser",  Parser.main),
-                        ("debug",  ZMQMan.main)
-                       ]
+{- map (module name that passed as argument) -> 
+       (function that implements main module's functionallity) -}
+modules :: Map.Map [Char] ([String] -> IO ())
+modules =  Map.fromList [("tracker", Tracker.main),
+                         ("parser",  Parser.main),
+                         ("debug",   ZMQMan.main)
+                        ]
 
+{- entry point -}
 main :: IO ()
 main = do args <- getArgs
           when (length args == 0) $ 
