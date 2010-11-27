@@ -6,6 +6,10 @@ import Data.Time.Clock
 maybeRead :: (Read a) => String -> Maybe a
 maybeRead = fmap fst . listToMaybe . reads 
 
+askFor :: String -> IO String
+askFor string = do putStrLn string
+                   r <- getLine
+                   return r
 
 ----------------------- debug utils ----------------------------
 

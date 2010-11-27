@@ -138,15 +138,22 @@ main args = do Doc.lengthArgsCheck args 0
                let connectTo = args !! 0
                
                context <- ZMQ.init 1 	-- size
-               sock <- socket context Pull
-               connect sock connectTo
+
+               iSock <- socket context Pull
+               connect iSock connectTo
+
+               oSock <- socket context Pub
+               
 
                -- FIXME not forever
                forever $ do
-                 rmc <- receive sock []
+                 rmc <- receive iSock []
+                 return ()
+                 
+                 
                  -- BSC8.appendFile "test.test" rmc
                  
-               ZMQ.close sock
+               ZMQ.close iSock
                ZMQ.term context
                  -- threadDelay 10000000
                return ()

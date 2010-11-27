@@ -101,17 +101,17 @@ main args = do Doc.lengthArgsCheck args 0
                           
                {- making connection -}
                context <- ZMQ.init 1 	-- size
-               sock <- socket context Push
-               bind sock addr
+               oSock <- socket context Push
+               bind oSock addr
 
                {- starting server -}
                replicateM_ 10000 $ do
                  -- FIXME not forever
                  rmc <- genRMC
-                 send sock rmc []
+                 send oSock rmc []
                  -- threadDelay 10000000
 
-               ZMQ.close sock
+               ZMQ.close oSock
                ZMQ.term context
                return ()
 

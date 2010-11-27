@@ -5,6 +5,8 @@ import qualified RMC.Parser.RMC 		as Parser
 import qualified RMC.API			as RMC
 import qualified Tracker.Tracker		as Tracker
 import qualified Doc
+import qualified Debug.ZMQManual		as ZMQMan
+
 
 
 -- import Text.ProtocolBuffers.WireMessage
@@ -19,12 +21,14 @@ import qualified Data.List as List
 
 
 modules = Map.fromList [("tracker", Tracker.main),
-                        ("parser",  Parser.main)]
+                        ("parser",  Parser.main),
+                        ("debug",  ZMQMan.main)
+                       ]
 
 main :: IO ()
 main = do args <- getArgs
           when (length args == 0) $ 
-            Doc.exitWithErr usage
+            Doc.exitWithErr $ usage ++ "(or try --help)"
           dispatch (head args) (tail args)
 
 dispatch :: String -> [String] -> IO ()
