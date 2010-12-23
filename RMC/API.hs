@@ -36,3 +36,5 @@ rmcToUTCTime rmc = mkUTCTime (rmcToDay rmc) (rmcToDiffTime rmc)
     where mkUTCTime day time = case (day, time) of
                                  (Just d, Just t)  -> Just $ UTCTime d t
                                  _		   -> Nothing
+----------------------------------------
+

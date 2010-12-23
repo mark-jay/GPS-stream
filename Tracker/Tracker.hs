@@ -44,13 +44,15 @@ genFixedInt (from, to) = liftM f $ randR (from, to)
           zeros x = take (on (-) (length . show) to x)
                          (repeat '0')
 
--- FIXME fixed size?
 genFixedDouble :: (Double, Double) -> IO String
 genFixedDouble (from, to) = liftM f $ randDR (from, to)
     where f :: Double -> String
-          f x = (zeros (truncate x) $ truncate to) ++ show x
+          f x = (zeros (truncate x) $ truncate to) ++ showNormaliziedDouble x
           zeros v max = take (on  (-) (length . show) max v) $
                              repeat '0'
+
+-- FIXME fixed size?
+showNormaliziedDouble = take 10 . show
 
 ioConcat :: (Monad m) => [m [a]] -> m [a]
 ioConcat = liftM concat . sequence
@@ -95,37 +97,32 @@ dateGen = ioConcat [genFixedInt 	(1, 28),	-- day
 ------------------------------------------------------------------------------
 
 main :: [String] -> IO ()
-main args = do Doc.lengthArgsAssert (length args > 0)
-               Doc.helpInArgsCheck args helpAboutModule
+main args = do 
+  Doc.lengthArgsAssert (length args > 0)
+  Doc.helpInArgsCheck args Doc.trackerUsage
 
-               let addrN = args !! 0
-                   
-               Doc.naturalNumAssert addrN "argument must be an integer"
-               Doc.addressExistAssert "parsers" (read addrN)
+  let addrN = args !! 0
 
-               addr <- Conf.getAddr "parsers" (read addrN)               
-                          
-               {- making connection -}
-               context <- ZMQ.init 1 	-- size
-               oSock <- socket context Push
-               connect oSock addr
+  Doc.naturalNumAssert addrN "argument must be an integer"
 
-               {- sending to server -}
-               putStrLn $ "sending to parser on " ++ 
-                          show addr ++ " ..."
-               replicateM_ 1000 $ do
-                 -- FIXME not forever
-                 rmc <- genRMC
-                 send oSock rmc []
-                 -- threadDelay 10000000
+  nParser <- Conf.getNParser (read addrN)
 
-               ZMQ.close oSock
-               ZMQ.term context
-               return ()
+  let addr = Conf.nodeInput nParser
 
-helpAboutModule = usage ++ about
+  {- making connection -}
+  context <- ZMQ.init 1 	-- size
+  oSock <- socket context Push
+  connect oSock addr
 
-usage = "usage: gps-stream tracker <number>\n  where <number> is number of parser you want " ++
-        "connect this tracker to For example:\n gps-stream tracker 0"
+  {- sending to server -}
+  putStrLn $ "sending to parser on " ++ 
+             show addr ++ " ..."
+  replicateM_ 1000 $ do
+     -- FIXME not forever
+     rmc <- genRMC
+     send oSock rmc []
+     -- threadDelay 10000000
 
-about = ""
+  ZMQ.close oSock
+  ZMQ.term context
+  return ()

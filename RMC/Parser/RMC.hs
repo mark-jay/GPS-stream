@@ -5,6 +5,7 @@ import RMC.API
 import Doc
 import Utils
 import Conf
+import Logger
 
 import 			Control.Applicative((<|>)) 		-- for <|> operator
 import 			Control.Monad
@@ -14,6 +15,7 @@ import 			Data.Attoparsec.Combinator
 import 			Data.Attoparsec.Char8 as P
 
 import 			Text.ProtocolBuffers.Basic		-- for uFromString
+import qualified	Text.ProtocolBuffers.WireMessage as Protobuf
 
 import qualified 	Data.ByteString as BS
 import qualified 	Data.ByteString.Char8 as BSC8
@@ -133,40 +135,56 @@ checkRMCSum input checkSum = calcRMCSum input == checkSum
 --------------------------------------------------------------------------------
 
 main :: [String] -> IO ()
-main args = do Doc.lengthArgsAssert (length args > 0)
-               Doc.helpInArgsCheck args helpAboutModule
+main args = do 
+  Doc.lengthArgsAssert (length args > 0)
+  Doc.helpInArgsCheck args Doc.parserUsage
                
-               let toBindN = args !! 0
+  let toBindN = args !! 0
 
-               Doc.naturalNumAssert toBindN "argument must be an integer"
-               Doc.addressExistAssert "parsers" (read toBindN)
+  Doc.naturalNumAssert toBindN "argument must be an integer"
 
-               toBind <- Conf.getAddr "parsers" (read toBindN)
+  nParser <- Conf.getNParser (read toBindN)
+
+  let toBindI = nodeInput  nParser
+      toBindO = nodeOutput nParser
                
-               context <- ZMQ.init 1 	-- size
+  context <- ZMQ.init 1
 
-               iSock <- socket context Pull
-               bind iSock toBind
+  -- binding input socket
+  iSock <- socket context Pull
+  bind iSock toBindI
 
-               -- FIXME not forever
-               putStrLn $ "running parser on " ++ 
-                          show toBind ++ " ..."
-               forever $ do
-                 rmc <- receive iSock []
-                 print $ parseRMC rmc
-                 return ()
-                 
-               ZMQ.close iSock
-               ZMQ.term context
-                 -- threadDelay 10000000
-               return ()
+  oSock <- socket context Pub
+  bind oSock toBindO
 
-helpAboutModule = usage ++ about
+  putStrLn $ "running parser on |" ++ toBindI ++ " -> [] -> " ++
+             toBindO ++ "| ..."
+  -- FIXME not forever
+  forever $ do
+    rmcString <- receive iSock []
+    case parseRMC rmcString of
+      (Left  err) -> Logger.rmcParseError (BSC8.unpack rmcString) err
+      (Right rmc) -> do send oSock (Utils.fromLazyBS $ Protobuf.messagePut rmc) []
+                           
+  return ()
 
-usage = "usage: gps-stream parser <srv-addr>\nFor example:\n  " ++ 
-        "gps-stream parser tcp://127.0.0.1:12345"
+  ZMQ.close iSock
+  ZMQ.term context
+  -- threadDelay 10000000
+  return ()
 
-about = ""
+
+{-
+send ::
+  Socket a -> Data.ByteString.Internal.ByteString -> [Flag] -> IO ()
+
+Protobuf.messagePut ::
+  (Text.ProtocolBuffers.Reflections.ReflectDescriptor msg,
+   Wire msg) =>
+  msg -> ByteString
+  	-- Defined in Text.ProtocolBuffers.WireMessage
+-}
+
 
 --------------------------------------------------------------------------------
 -- test = parseRMC . BSC8.pack

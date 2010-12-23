@@ -1,0 +1,9 @@
+Utils:
+-- FIXME does not work
+fromProtoBS :: Text.ProtocolBuffers.Basic.ByteString 
+           -> Maybe Data.ByteString.Internal.ByteString
+fromProtoBS = cast
+
+toProtoBS :: Data.ByteString.Internal.ByteString 
+          -> Maybe Text.ProtocolBuffers.Basic.ByteString
+toProtoBS = cast
