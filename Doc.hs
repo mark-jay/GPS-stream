@@ -12,8 +12,35 @@ import qualified Conf
 ---------------------------------------------------------------------------------------
 -- asserts and checks
 
-lengthArgsAssert cond = do when (not cond) $
-                             Utils.exitWithErr wrongNumArgs
+data HType = HPositiveInt
+           | HFilePath
+           | HRangedInt { hMinInt	:: Int
+                        , hMaxInt	:: Int }
+             deriving ( Show )
+hMatch' :: HType -> String -> Bool
+hMatch' HPositiveInt 		int	 = (reads :: ReadS Int) int /= []
+hMatch' HFilePath 		fPath	 = True
+hMatch' (HRangedInt min max) 	int	 = hMatch' HPositiveInt int && inRange (read int)
+    where 
+      inRange int | int >= min && int <= max 	= True
+                  | otherwise			= False
+
+hMatch :: HType -> String -> IO ()
+hMatch htype rtype= do
+  when (not $ hMatch' htype rtype) $ do
+       Utils.exitWithErr $ "Couldn't match expected type `" ++ show htype ++ "'" ++
+                           "against input `" ++ rtype ++ "'"
+
+assertArgs :: [HType] -> [String] -> IO ()
+assertArgs htypes args = allMatch >> lenMatch
+    where 
+      allMatch = sequence $ zipWith hMatch htypes args
+      lenMatch = lengthArgsAssert $ length args >= length htypes
+
+      lengthArgsAssert cond = do when (not cond) $
+                                      Utils.exitWithErr $ wrongNumArgsExp $ length htypes
+
+--------------------------------------------------------------------------------
 
 helpInArgsCheck args helpString = do when ("--help" `elem` args) $
                                        Utils.docAndExit helpString
@@ -23,18 +50,11 @@ addressExistAssert string n = do addr <- Conf.getMaybeAddr string n
                                  when (Maybe.isNothing addr) $
                                    exitWithErr $ "address " ++ string ++ ":" ++ show n ++ "does not exist"
 -}
-
-naturalNumAssert string err = if (reads :: ReadS Int) string /= []
-                              then return ()
-                              else Utils.exitWithErr err
-
--- FIXME
-correctFileNameAssert :: String -> IO ()         
-correctFileNameAssert fileName = return ()
 ---------------------------------------------------------------------------------------
 -- labels 
 
-wrongNumArgs = "invalid number of arguments(try --help)"
+wrongNumArgsExp :: Int -> String
+wrongNumArgsExp n = "invalid number of arguments(try --help)\n  Expected at least " ++ show n
 
 programUsage = "usage: gps-stream <module> <module-args>"
 
@@ -51,6 +71,8 @@ trackerUsage = "usage: gps-stream tracker <number>\n  where <number> is number o
 
 parserUsage = "usage: gps-stream parser <srv-addr-id>\nFor example:" ++ 
               "\n  gps-stream parser 0"
+
+debugUsage = "just for debug"
 
 dumperUsage = "usage: gps-stream dumper <fileToWrite>\n" ++ "You may use 'dmp.txt'\n" ++ 
               "this module connects to every parser listed in conf.cfg"

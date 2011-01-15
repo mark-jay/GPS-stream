@@ -96,23 +96,16 @@ dateGen = ioConcat [genFixedInt 	(1, 28),	-- day
 ------------------------------    main logic    ------------------------------
 ------------------------------------------------------------------------------
 
-main :: [String] -> IO ()
-main args = do 
-  Doc.lengthArgsAssert (length args > 0)
-  Doc.helpInArgsCheck args Doc.trackerUsage
+main :: [String] -> Context -> IO ()
+main args context = do 
+  Doc.assertArgs [Doc.HPositiveInt] args
 
   let addrN = args !! 0
 
-  Doc.naturalNumAssert addrN "argument must be an integer"
-
-  nParser <- Conf.getNParser (read addrN)
-
-  let addr = Conf.nodeInput nParser
+  addr <- liftM Conf.nodeInput $ Conf.getNParser (read addrN)
 
   {- making connection -}
-  context <- ZMQ.init 1 	-- size
-  oSock <- socket context Push
-  connect oSock addr
+  oSock <- Utils.mkSockToConn context Push [addr]
 
   {- sending to server -}
   putStrLn $ "sending to parser on " ++ 
@@ -124,5 +117,4 @@ main args = do
      -- threadDelay 10000000
 
   ZMQ.close oSock
-  ZMQ.term context
   return ()

@@ -12,6 +12,7 @@ import qualified RMC.API 		as RMC
 import qualified Text.ProtocolBuffers.WireMessage as Protobuf
 
 import System.ZMQ as ZMQ
+import IO
 
 import Control.Monad
 import qualified Data.ByteString.Char8 as BSC8
@@ -85,13 +86,9 @@ strToTime = const time
 --------------------------------------------------------------------------------
 
 
-main :: [String] -> IO ()
-main args = do 
-  Doc.helpInArgsCheck args Doc.sqlSrvUsage
-  Doc.lengthArgsAssert (length args > 1)
-  Doc.naturalNumAssert (args !! 0) "SqlSrv error: 1st argument must be integer"
-  Doc.naturalNumAssert (args !! 1) "SqlSrv error: 2nd argument must be integer"
-  inQueriesRangeAssert $ read $ args !! 0
+main :: [String] -> Context -> IO ()
+main args context = do
+  Doc.assertArgs [HRangedInt 0 (length queries - 1), Doc.HPositiveInt] args
 
   let queryIdx :: Int
       queryIdx  = read $ args !! 0
@@ -101,27 +98,18 @@ main args = do
   connectTo 	<- liftM (map nodeOutput) $ Conf.getParsers
   toBindO	<- liftM nodeOutput 	  $ Conf.getNAgreg agregIdx
 
-  context <- ZMQ.init 1
-
-  {- making input connection -}
-  iSock <- socket context Sub
-  subscribe iSock ""
-  forM_ connectTo $ \ parserAddr -> do
-      connect iSock parserAddr
-
-  {- making output connection -}
-  oSock <- socket context Pub
-  bind oSock toBindO
+  (iSock, oSock) <- zmqInit connectTo toBindO context
 
   putStrLn $ "serving {" ++ List.intercalate ", " connectTo ++ 
-             "} with query " ++ show queryIdx
+        "} with query " ++ show queryIdx
+
   rows <- liftM concat $ replicateM maxMess $ do
-              rmc <- receive iSock []
-              case Protobuf.messageGet (Utils.toLazyBS rmc) of
-                (Left err)  	    -> do Logger.messageGetError rmc err
+            rmc <- receive iSock []
+            case Protobuf.messageGet (Utils.toLazyBS rmc) of
+              (Left err)  	    -> do Logger.messageGetError rmc err
                                           return []
-                -- do send oSock (Utils.fromLazyBS $ Protobuf.messagePut rmc) []
-                (Right (rmc, rest)) -> return [RMCStream.rmcToRow rmc]
+              -- do send oSock (Utils.fromLazyBS $ Protobuf.messagePut rmc) []
+              (Right (rmc, rest))   -> return [RMCStream.rmcToRow rmc]
 
   let acc 	= List.foldl' (mkAccum query) emptyAcc rows
       result	= extractAccum query acc
@@ -135,8 +123,18 @@ main args = do
   putStrLn $ "rows in map(in fst group) : " ++ show (length $ head $ map snd $ Data.Map.toList acc)
   putStrLn $ "rows in msg               : " ++ show (length $ result)
   send oSock msg []
-
-  ZMQ.close oSock
-  ZMQ.close iSock
-  ZMQ.term context
   return ()
+      where
+        termAll iSock oSock = do              
+          ZMQ.close oSock
+          ZMQ.close iSock
+          return ()
+
+        zmqInit connectTo toBindO context = do
+          {- making input connection -}             
+          iSock <- Utils.mkSockToConn context Sub connectTo
+          subscribe iSock ""
+
+          {- making output connection -}
+          oSock <- Utils.mkSockToBind context Pub [toBindO]
+          return (iSock, oSock)

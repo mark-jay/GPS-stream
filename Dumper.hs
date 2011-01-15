@@ -12,23 +12,16 @@ import Doc
 import Utils
 import Conf
 
-main :: [String] -> IO ()
-main args = do 
-  Doc.lengthArgsAssert (length args > 0)
-  Doc.helpInArgsCheck args Doc.dumperUsage
-               
+main :: [String] -> Context -> IO ()
+main args context = do 
+  Doc.assertArgs [HFilePath] args
+
   let fileToDump   = args !! 0
 
   connectTo <- liftM (map nodeOutput) $ Conf.getParsers
 
-  Doc.correctFileNameAssert fileToDump
-               
-  context <- ZMQ.init 1
-  sock <- socket context Sub
+  sock <- mkSockToConn context Sub connectTo
   subscribe sock ""
-
-  forM_ connectTo $ \ parserAddr -> do
-      connect sock parserAddr
 
   -- FIXME not forever
   putStrLn $ "dumping from {" ++ List.intercalate ", " connectTo ++ 
@@ -40,5 +33,4 @@ main args = do
     return ()
 
   ZMQ.close sock
-  ZMQ.term context
   return ()

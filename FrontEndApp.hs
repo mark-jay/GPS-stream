@@ -16,13 +16,9 @@ file = "result.html"
 mkHtml :: TableMeta -> [Row] -> String
 mkHtml = undefined
 
-main :: [String] -> IO ()
-main args = do 
-  Doc.helpInArgsCheck args Doc.frontEndUsage
-
+main :: [String] -> Context -> IO ()
+main args context = do 
   parsers <- liftM (map Conf.nodeOutput) $ Conf.getParsers
-
-  context <- ZMQ.init 1
 
   -- binding input socket
   iSock <- socket context Sub

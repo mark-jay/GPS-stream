@@ -14,13 +14,13 @@ import qualified RMC.Protobuf.RMC.RMC.Status	as RMC
 import qualified RMC.Protobuf.RMC.RMC.ModeInd	as RMC
 
 data Field = 
-    FDouble 	{fDouble	:: Maybe Double}
-  | FDayTime 	{fUTCTime	:: Maybe UTCTime}
-  | FInt 	{fInt		:: Maybe Int}
-  | FInt32 	{fInt32		:: Maybe Int32}
-  | FRMCStatus	{fRMCStatus	:: Maybe RMC.Status}
-  | FMDeclDir 	{fMDeclDir	:: Maybe RMC.MDeclDir}
-  | FModeInd 	{fModeInd	:: Maybe RMC.ModeInd}
+    FDouble 	{ fDouble	:: Maybe Double 	}
+  | FDayTime 	{ fUTCTime	:: Maybe UTCTime 	}
+  | FInt 	{ fInt		:: Maybe Int 		}
+  | FInt32 	{ fInt32	:: Maybe Int32 		}
+  | FRMCStatus	{ fRMCStatus	:: Maybe RMC.Status 	}
+  | FMDeclDir 	{ fMDeclDir	:: Maybe RMC.MDeclDir 	}
+  | FModeInd 	{ fModeInd	:: Maybe RMC.ModeInd 	}
     deriving(Show, Read, Eq)
 
 badArgs args = "bad args: " ++ (List.intercalate ", " $ map show args)

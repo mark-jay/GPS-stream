@@ -134,21 +134,16 @@ checkRMCSum input checkSum = calcRMCSum input == checkSum
 
 --------------------------------------------------------------------------------
 
-main :: [String] -> IO ()
-main args = do 
-  Doc.lengthArgsAssert (length args > 0)
-  Doc.helpInArgsCheck args Doc.parserUsage
-               
-  let toBindN = args !! 0
+main :: [String] -> Context -> IO ()
+main args context = do 
+  Doc.assertArgs [Doc.HPositiveInt] args
 
-  Doc.naturalNumAssert toBindN "argument must be an integer"
+  let toBindN = args !! 0
 
   nParser <- Conf.getNParser (read toBindN)
 
   let toBindI = nodeInput  nParser
       toBindO = nodeOutput nParser
-               
-  context <- ZMQ.init 1
 
   -- binding input socket
   iSock <- socket context Pull
@@ -165,11 +160,10 @@ main args = do
     case parseRMC rmcString of
       (Left  err) -> Logger.rmcParseError (BSC8.unpack rmcString) err
       (Right rmc) -> do send oSock (Utils.fromLazyBS $ Protobuf.messagePut rmc) []
-                           
+
   return ()
 
   ZMQ.close iSock
-  ZMQ.term context
   -- threadDelay 10000000
   return ()
 

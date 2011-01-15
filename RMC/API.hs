@@ -1,4 +1,9 @@
-module RMC.API where
+module RMC.API(calcRMCSum, rmcToDay, 
+               rmcToDiffTime, rmcToUTCTime,
+               module RMC)
+where
+
+import RMC.Protobuf.RMC.RMC	as RMC
 
 import Data.Time
 import Control.Monad
@@ -6,8 +11,8 @@ import Data.Bits(xor)
 import Data.Char(ord)
 import Data.ByteString.Internal(c2w, w2c)
 import qualified Data.ByteString.Char8 as BSC8
-import RMC.Protobuf.RMC.RMC 	       as RMC
 import qualified Data.ByteString       as BS
+
 
 calcRMCSum :: BS.ByteString -> Int
 calcRMCSum input = xorBits (f input)

@@ -2,6 +2,7 @@ module Utils where
 
 import System.Exit
 import System.IO
+import IO
 
 import Data.Maybe(listToMaybe)
 import Data.Typeable
@@ -12,6 +13,9 @@ import qualified Data.ByteString.Internal
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LazyBS
 
+import System.ZMQ as ZMQ
+
+import Control.Monad
 ----------------------------------------------------------------------
 exitWithErr errMessage = do hPutStrLn stderr errMessage
                             exitFailure
@@ -53,16 +57,28 @@ getTimeIO f x = do beg <- getCurrentTime
                    end <- r `seq` getCurrentTime
                    return(r, diffUTCTime end beg)
 
-{-
-data LazyBS.ByteString
-  = Data.ByteString.Lazy.Internal.Empty
-  | Data.ByteString.Lazy.Internal.Chunk !Data.ByteString.ByteString
-                                        LazyBS.ByteString
-  	-- Defined in Data.ByteString.Lazy.Internal
+--------------------------------------------------------------------------------
+-- ZMQ
 
-data LazyBS.ByteString
-  = ...
-  | Data.ByteString.Lazy.Internal.Chunk !Data.ByteString.ByteString
-                                        LazyBS.ByteString
-  	-- Defined in Data.ByteString.Lazy.Internal
+
+
+mkSockToConn :: (SType st) => Context -> st -> [String] -> IO (Socket st)
+mkSockToConn context st connectTo = do
+  sock <- socket context st
+  forM_ connectTo $ \ addr -> do
+      connect sock addr
+  return sock
+
+mkSockToBind :: (SType st) => Context -> st -> [String] -> IO (Socket st)
+mkSockToBind context st bindTo = do
+  sock <- socket context st
+  forM_ bindTo $ \ addr -> do
+      bind sock addr
+  return sock
+
+{-
+withContext :: (Context -> IO b) -> IO b
+withContext fn = bracket (ZMQ.init 1)
+                         (ZMQ.term)
+                         (fn)
 -}

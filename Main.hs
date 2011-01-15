@@ -1,6 +1,5 @@
 module Main where
 
-import qualified RMC.Protobuf.RMC.RMC	 	as RMC
 import qualified RMC.Parser.RMC 		as Parser
 import qualified RMC.API			as RMC
 import qualified Tracker.Tracker		as Tracker
@@ -20,16 +19,17 @@ import qualified Data.Map  as Map
 import Data.Map((!))
 import qualified Data.List as List
 
+import qualified System.ZMQ as ZMQ
 
 {- map (module name that passed as argument) -> 
        (function that implements main module's functionallity) -}
-modules :: Map.Map [Char] ([String] -> IO ())
-modules =  Map.fromList [("tracker",	Tracker.main),
-                         ("parser",	Parser.main),
-                         ("debug",	ZMQMan.main),
-                         ("dumper",	Dumper.main),
-                         ("sqlSrv",	Queries.main),
-                         ("frontEnd",	FrontEndApp.main)
+modules :: Map.Map [Char] ([String] -> ZMQ.Context -> IO (), String)
+modules =  Map.fromList [("tracker",	(Tracker.main,		Doc.trackerUsage)),
+                         ("parser",	(Parser.main,		Doc.parserUsage)),
+                         ("debug",	(ZMQMan.main,		Doc.debugUsage)),
+                         ("dumper",	(Dumper.main,		Doc.dumperUsage)),
+                         ("sqlSrv",	(Queries.main,		Doc.sqlSrvUsage)),
+                         ("frontEnd",	(FrontEndApp.main,	Doc.frontEndUsage))
                         ]
 
 {- entry point -}
@@ -40,8 +40,14 @@ main = do args <- getArgs
           dispatch (head args) (tail args)
 
 dispatch :: String -> [String] -> IO ()
-dispatch modu1e args | Map.member modu1e modules = modules ! modu1e $ args
+dispatch modu1e args | Map.member modu1e modules = dispatchSucc
                      | otherwise		 = dispatchFail
     where dispatchFail = do when ("--help" `elem` (modu1e:args)) $
                               Utils.docAndExit $ Doc.commonHelpMsg $ Map.keys modules
                             Utils.exitWithErr $ Doc.unrecCmd modu1e
+          dispatchSucc = do 
+            context <- ZMQ.init 1
+            let (fn, helpString) = (modules ! modu1e)
+            Doc.helpInArgsCheck args helpString
+            fn args context
+            ZMQ.term context
