@@ -1,4 +1,4 @@
-module SqlStream.Queries where
+module Modules.SqlSrv where
 
 import SqlStream.SqlStream
 import qualified SqlStream.RMCStream as RMCStream

@@ -1,4 +1,4 @@
-module Dumper where
+module Modules.Dumper where
 
 import System.ZMQ as ZMQ
 -- import 			Text.ProtocolBuffers.Basic		-- for uFromString

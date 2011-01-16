@@ -1,4 +1,4 @@
-module Debug.ZMQManual where
+module Modules.Debug where
 
 import System.ZMQ as ZMQ
 import Utils

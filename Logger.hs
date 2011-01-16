@@ -1,7 +1,7 @@
 module Logger(rmcParseError, messageGetError, 
-              resultReadError) where
+              resultReadError) 
+    where
 
-import RMC.Protobuf.RMC.RMC
 import RMC.API
 
 import qualified Data.ByteString.Char8 as BSC8

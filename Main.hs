@@ -1,14 +1,18 @@
 module Main where
 
-import qualified RMC.Parser.RMC 		as Parser
+
 import qualified RMC.API			as RMC
-import qualified Tracker.Tracker		as Tracker
+
+-- modules exporting
+import qualified Modules.Parser 		as Parser
+import qualified Modules.Tracker		as Tracker
+import qualified Modules.Dumper			as Dumper
+import qualified Modules.Debug			as ZMQMan
+import qualified Modules.SqlSrv			as Queries
+import qualified Modules.FrontEndApp		as FrontEndApp
+
 import qualified Doc
 import qualified Utils
-import qualified Dumper
-import qualified Debug.ZMQManual		as ZMQMan
-import qualified SqlStream.Queries		as Queries
-import qualified FrontEndApp
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BSC8
