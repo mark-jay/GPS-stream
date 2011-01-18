@@ -20,7 +20,6 @@ import Control.Monad
 import qualified Data.ByteString.Char8 as BSC8
 import qualified Data.List as List
 
-import qualified Data.Map {- remove it -}
 import qualified Data.Maybe as Maybe
 
 import Prelude hiding((.), id)
@@ -32,18 +31,11 @@ import qualified RMC.Protobuf.RMC.RMC.Status	as RMCStatus
 import qualified RMC.Protobuf.RMC.RMC.ModeInd	as RMCModeInd
 import qualified RMC.Protobuf.RMC.RMC.MDeclDir	as RMCMdeclDir
 
-type Row = [Field]
-
 queries :: [TableMap [Field] RMC Row]
 queries = [query1, query2]
 
 -- number of message to receive
 maxMess = 1000
-
-inQueriesRangeAssert :: Int -> IO ()
-inQueriesRangeAssert x = if x < length queries && x >= 0
-                         then return ()
-                         else Utils.exitWithErr "SqlSrv: no such query"
 
 --------------------------------------------------------------------------------
 -- queries
@@ -68,9 +60,8 @@ query2 = TableMap.mkTMapWithKeys' (toKey &&& toValue) (+) 0 >>>
 
 --------------------------------------------------------------------------------
 
-strToTime :: String -> Field
-strToTime = const time
-    where time = FDayTime $ Just $ read "2010-12-10 19:21:55.810178 UTC"
+someTime :: Field
+someTime = FDayTime $ Just $ read "2010-12-10 19:21:55.810178 UTC"
 
 --------------------------------------------------------------------------------
 
@@ -78,11 +69,6 @@ strToTime = const time
 main :: [String] -> Context -> IO ()
 main args context = do
   Doc.assertArgs [HRangedInt 0 (length queries - 1), Doc.HPositiveInt] args
-
-  let queryIdx :: Int
-      queryIdx  = read $ args !! 0
-      query	= queries !! queryIdx
-      agregIdx	= read $ args !! 1
 
   connectTo 	<- liftM (map nodeOutput) $ Conf.getParsers
   toBindO	<- liftM nodeOutput 	  $ Conf.getNAgreg agregIdx
@@ -99,6 +85,7 @@ main args context = do
                                           return []
               -- do send oSock (Utils.fromLazyBS $ Protobuf.messagePut rmc) []
               (Right (rmc, rest))   -> return [rmc]
+
   let result	= TableMap.elems $ TableMap.fromList rows >>> query
       msg 	= BSC8.pack $ show $ result
 
@@ -108,7 +95,12 @@ main args context = do
   send oSock msg []
 
   return ()
+
       where
+        queryIdx 	= read $ args !! 0
+        query		= queries !! queryIdx
+        agregIdx	= read $ args !! 1
+
         termAll iSock oSock = do              
           ZMQ.close oSock
           ZMQ.close iSock

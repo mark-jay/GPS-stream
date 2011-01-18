@@ -9,11 +9,13 @@ import qualified Utils(maybeRead)
 import qualified Conf
 import qualified Doc
 import qualified Logger
-import SqlStream.SqlStream
+-- import SqlStream.SqlStream
+
+import qualified  SqlStream.Fields as Fields
 
 file = "result.html"
 
-mkHtml :: TableMeta -> [Row] -> String
+mkHtml :: Fields.TableMeta -> [Fields.Row] -> String
 mkHtml = undefined
 
 main :: [String] -> Context -> IO ()

@@ -1,4 +1,4 @@
-module SqlStream.Fields(Field(..), fTruncate, fRound, fCeiling, fFloor) where
+module SqlStream.Fields(Field(..), fTruncate, fRound, fCeiling, fFloor, Row, TableMeta) where
 
 -- FIXME instances
 import Data.Time
@@ -22,6 +22,11 @@ data Field =
   | FMDeclDir 	{ fMDeclDir	:: Maybe RMC.MDeclDir 	}
   | FModeInd 	{ fModeInd	:: Maybe RMC.ModeInd 	}
     deriving(Show, Read, Eq, Ord)
+
+type Row = [Field]
+
+-- FIXME 
+type TableMeta = ()
 
 badArgs args = "bad args: " ++ (List.intercalate ", " $ map show args)
 

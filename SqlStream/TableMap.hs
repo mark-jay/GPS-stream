@@ -13,8 +13,6 @@ import Control.Arrow
 import Control.Monad.State
 import Control.Category
 
-import Data.Monoid
-
 import Prelude hiding((.), id, filter, map, sum)
 
 -- | This module aimed to be qualified
