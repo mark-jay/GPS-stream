@@ -1,4 +1,4 @@
-module Modules.Parser where
+module Modules.Parser(main) where
 
 import RMC.Protobuf.RMC.RMC
 import RMC.API

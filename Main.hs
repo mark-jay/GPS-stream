@@ -8,7 +8,7 @@ import qualified Modules.Parser 		as Parser
 import qualified Modules.Tracker		as Tracker
 import qualified Modules.Dumper			as Dumper
 import qualified Modules.Debug			as ZMQMan
-import qualified Modules.SqlSrv			as Queries
+import qualified Modules.SqlSrv			as SqlSrv
 import qualified Modules.FrontEndApp		as FrontEndApp
 
 import qualified Doc
@@ -32,7 +32,7 @@ modules =  Map.fromList [("tracker",	(Tracker.main,		Doc.trackerUsage)),
                          ("parser",	(Parser.main,		Doc.parserUsage)),
                          ("debug",	(ZMQMan.main,		Doc.debugUsage)),
                          ("dumper",	(Dumper.main,		Doc.dumperUsage)),
-                         ("sqlSrv",	(Queries.main,		Doc.sqlSrvUsage)),
+                         ("sqlSrv",	(SqlSrv.main,		Doc.sqlSrvUsage)),
                          ("frontEnd",	(FrontEndApp.main,	Doc.frontEndUsage))
                         ]
 

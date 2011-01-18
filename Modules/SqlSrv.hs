@@ -1,14 +1,16 @@
-module Modules.SqlSrv where
+module Modules.SqlSrv(main) where
 
-import SqlStream.SqlStream
-import qualified SqlStream.RMCStream as RMCStream
+import SqlStream.TableMap (TableMap)
+import qualified SqlStream.TableMap as TableMap
+import SqlStream.Fields
+
 import Doc
 import qualified Utils
 import qualified Logger
 import Conf
 
-import qualified RMC.Protobuf.RMC.RMC	as RMC
 import qualified RMC.API 		as RMC
+import RMC.API(RMC)
 import qualified Text.ProtocolBuffers.WireMessage as Protobuf
 
 import System.ZMQ as ZMQ
@@ -19,9 +21,21 @@ import qualified Data.ByteString.Char8 as BSC8
 import qualified Data.List as List
 
 import qualified Data.Map {- remove it -}
+import qualified Data.Maybe as Maybe
 
-queries :: [Query ()]
-queries = [query1, query2, query3]
+import Prelude hiding((.), id)
+import Control.Category
+import Control.Monad
+import Control.Arrow((&&&))
+
+import qualified RMC.Protobuf.RMC.RMC.Status	as RMCStatus
+import qualified RMC.Protobuf.RMC.RMC.ModeInd	as RMCModeInd
+import qualified RMC.Protobuf.RMC.RMC.MDeclDir	as RMCMdeclDir
+
+type Row = [Field]
+
+queries :: [TableMap [Field] RMC Row]
+queries = [query1, query2]
 
 -- number of message to receive
 maxMess = 1000
@@ -33,49 +47,24 @@ inQueriesRangeAssert x = if x < length queries && x >= 0
 
 --------------------------------------------------------------------------------
 -- queries
-query1 :: Query ()
-query1 = do 
-  select $ ["time", "Count time", "Sum speed"]
 
-  from $ RMCStream.rmcTableMeta
+-- average time
+query1 :: TableMap [Field] RMC Row
+query1 = TableMap.map RMC.time >>> 
+         TableMap.filter (/= Nothing) >>> 
+         TableMap.map Maybe.fromJust >>>
+         TableMap.avrg (const []) >>> 
+         TableMap.map (FDouble . Just . snd) >>>
+         TableMap.map return 
 
-query2 :: Query ()
-query2 = do 
-  select $ ["direction"]
+-- sum speed, group by status
+query2 :: TableMap [Field] RMC Row
+query2 = TableMap.mkTMapWithKeys' (toKey &&& toValue) (+) 0 >>>
+         TableMap.map (TableMap.mapSnd $ return . FDouble . Just) >>>
+         TableMap.map (\(a, b) -> a++b)
+    where toKey   = return . FRMCStatus . RMC.status
+          toValue = Maybe.fromMaybe 0 . RMC.speed
 
-  from $ RMCStream.rmcTableMeta
-
-  selectWhere [(\ str2Field -> 
-                    str2Field "direction" > 180)]
-
--- TODOIT!
-query3 :: Query ()
-query3 = do 
-  select $ ["time", "direction", "Truncate direction", "Count direction"]
-
-  from $ RMCStream.rmcTableMeta
-
-  selectWhere [(\ str2Field -> 
-                    str2Field "direction" > 180)]
-
-  groupBy ["direction"]
-
-  having [(\ str2Field -> 
-               (str2Field "Count direction") == 1)]
-
-  orderBy [("time", ASC)]
-
---------------------------------------------------------------------------------
-
-accum :: Acc -> Row -> Acc
-accum = mkAccum query1
-
-rmcs = []
-
-result :: [Row]
-result = extractAccum query1 folded where
-    rows = map RMCStream.rmcToRow rmcs
-    folded = foldl accum emptyAcc rows
 
 --------------------------------------------------------------------------------
 
@@ -109,20 +98,15 @@ main args context = do
               (Left err)  	    -> do Logger.messageGetError rmc err
                                           return []
               -- do send oSock (Utils.fromLazyBS $ Protobuf.messagePut rmc) []
-              (Right (rmc, rest))   -> return [RMCStream.rmcToRow rmc]
-
-  let acc 	= List.foldl' (mkAccum query) emptyAcc rows
-      result	= extractAccum query acc
-      tableMeta = qOutputTable query
-      msg 	= BSC8.pack $ show (tableMeta, result)
+              (Right (rmc, rest))   -> return [rmc]
+  let result	= TableMap.elems $ TableMap.fromList rows >>> query
+      msg 	= BSC8.pack $ show $ result
 
   -- debug info
-  putStrLn $ "sending " ++ show tableMeta ++ "\n" ++ List.intercalate "\n" (map show result)
-  putStrLn $ "rows                      : " ++ show (length rows)
-  putStrLn $ "rows in map(groups count) : " ++ show (length $ map snd $ Data.Map.toList acc)
-  putStrLn $ "rows in map(in fst group) : " ++ show (length $ head $ map snd $ Data.Map.toList acc)
-  putStrLn $ "rows in msg               : " ++ show (length $ result)
+  putStrLn $ "sending " ++ show result
+
   send oSock msg []
+
   return ()
       where
         termAll iSock oSock = do              

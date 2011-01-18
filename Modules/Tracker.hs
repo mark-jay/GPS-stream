@@ -1,4 +1,4 @@
-module Modules.Tracker where
+module Modules.Tracker(main) where
 
 import RMC.API(calcRMCSum)
 import qualified Doc

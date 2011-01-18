@@ -1,4 +1,4 @@
-module Modules.FrontEndApp where
+module Modules.FrontEndApp(main) where
 
 import System.ZMQ as ZMQ
 

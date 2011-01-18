@@ -21,7 +21,7 @@ data Field =
   | FRMCStatus	{ fRMCStatus	:: Maybe RMC.Status 	}
   | FMDeclDir 	{ fMDeclDir	:: Maybe RMC.MDeclDir 	}
   | FModeInd 	{ fModeInd	:: Maybe RMC.ModeInd 	}
-    deriving(Show, Read, Eq)
+    deriving(Show, Read, Eq, Ord)
 
 badArgs args = "bad args: " ++ (List.intercalate ", " $ map show args)
 
@@ -64,6 +64,9 @@ instance Num Field where
   signum	= error "signum  not implemented yet"
 
 --------------------------------------------------------------------------------
+
+{-
+-- if diferrent type comparing is neccessary
 instance Ord Field where
     compare (FInt a)     (FInt b)	= compare a b
     compare (FInt32 a)   (FInt32 b) 	= compare a b
@@ -73,7 +76,12 @@ instance Ord Field where
     compare (FInt a) 	 (FDouble b)	= compare (fromIntegralMb a) b
     compare (FDouble a)	 (FInt b)	= compare a (fromIntegralMb b)
 
+    compare (FRMCStatus a)(FRMCStatus b)= compare a b
+    compare (FMDeclDir a) (FMDeclDir b) = compare a b
+    compare (FModeInd a)  (FModeInd b)  = compare a b
+
     compare a b				= error $ "on ordering Fields: " ++ show a ++ show b
+-}
 
 --------------------------------------------------------------------------------
 instance Fractional Field where

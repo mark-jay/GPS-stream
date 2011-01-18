@@ -3,7 +3,7 @@ module RMC.API(calcRMCSum, rmcToDay,
                module RMC)
 where
 
-import RMC.Protobuf.RMC.RMC	as RMC
+import RMC.Protobuf.RMC.RMC		as RMC
 
 import Data.Time
 import Control.Monad
