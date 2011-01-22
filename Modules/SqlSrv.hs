@@ -42,17 +42,14 @@ maxMess = 1000
 
 -- average time
 query1 :: TableMap [Field] RMC Row
-query1 = TableMap.map RMC.time >>> 
-         TableMap.filter (/= Nothing) >>> 
-         TableMap.map Maybe.fromJust >>>
-         TableMap.avrg (const []) >>> 
-         TableMap.map (FDouble . Just . snd) >>>
-         TableMap.map return 
+query1 = TableMap.map (FDouble . RMC.time)	>>> 
+         TableMap.avrg (const []) 		>>> 
+         TableMap.map (return . snd)
 
 -- sum speed, group by status
 query2 :: TableMap [Field] RMC Row
-query2 = TableMap.mkTMapWithKeys' (toKey &&& toValue) (+) 0 >>>
-         TableMap.map (TableMap.mapSnd $ return . FDouble . Just) >>>
+query2 = TableMap.mkTMapWithKeys' (toKey &&& toValue) (+) 0 		>>>
+         TableMap.map (TableMap.mapSnd $ return . FDouble . Just) 	>>>
          TableMap.map (\(a, b) -> a++b)
     where toKey   = return . FRMCStatus . RMC.status
           toValue = Maybe.fromMaybe 0 . RMC.speed

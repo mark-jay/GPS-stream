@@ -5,6 +5,7 @@ import Data.Time
 import Data.Int
 import Data.Ratio
 import Control.Monad
+import Control.Applicative((<|>))
 import qualified Data.List as List
 
 import qualified RMC.Protobuf.RMC.RMC	 	as RMC
@@ -28,16 +29,23 @@ type Row = [Field]
 -- FIXME 
 type TableMeta = ()
 
-badArgs args = "bad args: " ++ (List.intercalate ", " $ map show args)
+mbOp :: (a -> a -> a) -> (Maybe a -> Maybe a -> Maybe a)
+mbOp fn (Just a) (Just b) = Just (a `fn` b)
+mbOp fn a	 b	  = a <|> b
 
 mbPlus :: (Num a) => Maybe a -> Maybe a -> Maybe a
-mbPlus  = liftM2 (+)
+mbPlus  = mbOp (+)
 
 mbMult :: (Num a) => Maybe a -> Maybe a -> Maybe a
-mbMult  = liftM2 (*)
+mbMult  = mbOp (*)
+
+mbFracDiv :: (Fractional a) => Maybe a -> Maybe a -> Maybe a
+mbFracDiv = mbOp (/)
 
 fromIntegralMb :: (Integral a, Num b) => Maybe a -> Maybe b
 fromIntegralMb  = liftM fromIntegral
+
+notImplemented = error . (++ " is not implemented yet")
 
 instance Num Field where
   -- plus
@@ -48,8 +56,6 @@ instance Num Field where
   (FInt a)    + (FDouble b) = FDouble $ fromIntegralMb a `mbPlus` b
   (FDouble a) + (FInt b)    = FDouble $ a `mbPlus` fromIntegralMb b
 
-  a           + b           = error $ "Field '+', " ++ badArgs [a,b]
-
   -- mult
   (FDouble a) * (FDouble b) = FDouble $ a `mbMult` b
   (FInt a)    * (FInt b)    = FInt    $ a `mbMult` b
@@ -58,15 +64,13 @@ instance Num Field where
   (FInt a)    * (FDouble b) = FDouble $ fromIntegralMb a `mbMult` b
   (FDouble a) * (FInt b)    = FDouble $ a `mbMult` fromIntegralMb b
 
-  a           * b           = error $ "Field '*', " ++ badArgs [a,b]
-
   -- fromInteger
   fromInteger	= FInt . Just . fromInteger
 
-  (-)		= error "-       not implemented yet"
-  negate	= error "negate  not implemented yet"
-  abs		= error "abs     not implemented yet"
-  signum	= error "signum  not implemented yet"
+  (-)		= notImplemented "-"
+  negate	= notImplemented "negate"
+  abs		= notImplemented "abs"
+  signum	= notImplemented "signum"
 
 --------------------------------------------------------------------------------
 
@@ -85,16 +89,13 @@ instance Ord Field where
     compare (FMDeclDir a) (FMDeclDir b) = compare a b
     compare (FModeInd a)  (FModeInd b)  = compare a b
 
-    compare a b				= error $ "on ordering Fields: " ++ show a ++ show b
 -}
 
 --------------------------------------------------------------------------------
 instance Fractional Field where
-    FDouble a	/ FDouble b		= FDouble (liftM2 (/) a b)
-    a		/ b			= error $ "Field '/':" ++ show a ++ show b
+    FDouble a	/ FDouble b		= FDouble (a `mbFracDiv` b)
 
     recip (FDouble a)			= FDouble (liftM recip a)
-    recip a				= error $ "Field recip:" ++ show a
 
     fromRational 			= FDouble . Just . fromRational
 
