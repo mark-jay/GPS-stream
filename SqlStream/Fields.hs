@@ -109,13 +109,9 @@ instance Real Field where
 fTruncate, fRound, fCeiling, fFloor :: Field -> Field
 
 fTruncate 	(FDouble (Just a)) 	= FInt $ Just $ truncate a
-fTruncate 	a			= error $ "fTruncate: " ++ show a
 
 fRound 		(FDouble (Just a)) 	= FInt $ Just $ round a
-fRound	 	a			= error $ "fRound: " ++ show a
 
 fCeiling 	(FDouble (Just a)) 	= FInt $ Just $ ceiling a
-fCeiling 	a		 	= error $ "fCeiling: " ++ show a
 
 fFloor	 	(FDouble (Just a)) 	= FInt $ Just $ floor a
-fFloor	 	a		 	= error $ "fFloor: " ++ show a

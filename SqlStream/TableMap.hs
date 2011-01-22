@@ -60,7 +60,7 @@ mkTMap :: (Ord key) =>
         -> (outp -> outp -> outp)
         -> TableMap key inp outp
 mkTMap toKeyVal foldFn = mkTMapWithKeys toKeyVal foldFn >>>
-                          map (\(k, v) -> v)
+                          map snd
 ----------------------------------------
 mapInsertOrAlterWithKeys :: (Ord key) => key
                  -> val'
@@ -160,8 +160,8 @@ sumCountPair toKey = mkTMapWithKeys' (toKey &&& id) foldFn (0, 0)
     where
       foldFn (sum, count) el = (sum + el, count + 1)
 
-avrg toKey = sumCountPair toKey >>> mapValue (uncurry (/))
-sum toKey = sumCountPair toKey >>> mapValue fst
+avrg  toKey = sumCountPair toKey >>> mapValue (uncurry (/))
+sum   toKey = sumCountPair toKey >>> mapValue fst
 count toKey = sumCountPair toKey >>> mapValue snd
 
 --------------------------------------------------------------------------------
