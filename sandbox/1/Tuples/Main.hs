@@ -149,6 +149,9 @@ count 	=  mkAgr (fn, 0)
 -- ... etc
 -- Where  (employee_id `more` val 10)
 
+-- TODO
+-- hiding (Ord(..))
+-- rewrite >=, <=, == ...
 --------------------------------------------------------------------------------
 
 data Employee = Employee { employee_id	 	:: Int
@@ -160,7 +163,7 @@ employees = [(Employee 1 "1" 10),(Employee 2 "2" 20)]
 {-
 -- printf-like polymorphism
 -- syntax should be
-select (employee_id, employee_name) 
+select (employee_id, employee_name, agr(smth) `over` partition(smthElse))
             `from` employees 
             `whereP`  (employee_id <= val 10)
             `groupBy` (OneTuple employee_id)
