@@ -166,7 +166,7 @@ employees = [(Employee 1 "1" 10),(Employee 2 "2" 20)]
 select (employee_id, employee_name, agr(smth) `over` partition(smthElse))
             `from` employees 
             `whereP`  (employee_id <= val 10)
-            `groupBy` (OneTuple employee_id)
+            `sortBy` (OneTuple employee_id)
 
 select (employee_id, employee_name) 
    `whereP` ...
