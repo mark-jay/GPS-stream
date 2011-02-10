@@ -1,144 +1,60 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, FunctionalDependencies #-}
+-- {-# LANGUAGE UndecidableInstances #-}
+	
 
 module Main where
 
-import TupleUnion
 import TupleApply
+import TupleJoin
+import Relation
+import TupleUnion
 
 import Control.Applicative
 import Control.Arrow
 import Control.Monad hiding (join)
 
-import qualified Data.List as List
+import Data.Tuple.All
 
-import Data.Monoid
-import Data.Function
 import qualified Data.Maybe as Maybe
 
 import Prelude hiding (foldl, sum, head)
 import qualified Prelude
 
-class Relation r where
-    insert 		:: a -> r a -> r a
-    singleton		:: a -> r a
-    rempty		:: r a
-    foldl		:: (b -> a -> b) -> b -> r a -> b
-    partition   	:: (Ord k, Relation r) => (a -> k) -> r a -> (a->k, r (r a))
-
-    -- relat algebra
-    minus 		:: (Eq a) => 
-			   r a -> r a -> r a
-    minus ra1 ra2	=  foldl fn rempty ra1
-        where fn acc b | b `member` ra2 = acc
-                        | otherwise	= b `insert` acc
-    union 		:: r a -> r a -> r a
-    union ra		=  foldl (flip insert) ra
-    projection	 	:: (a -> b) -> r a -> r b
-    projection	fn 	=  foldl (\ b a -> fn a `insert` b) rempty
-    selection	 	:: (a -> Bool) -> r a -> r a
-    selection	p 	=  foldl p' rempty
-        where p' b a | p a 	 = a `insert` b
-                     | otherwise = b
-
-    -- other
-    over		:: (Eq k) =>
-                           (r a -> b) ->
-                           (r a -> (a->k, r (r a))) ->
-                           (r a -> r (a, b))
-    (agr `over` part) ra = let (toKey, rra) = part ra
-                               rkb	    = projection (toKey . head &&& agr) rra
-                               pred a (k,b) 
-                                   | toKey a == k = True
-                                   | otherwise	  = False
-                           in projection (id***snd) $ join pred ra rkb
-
-    head		:: r a -> a
-    head		=  Prelude.head . toList
-
-    toList		:: r a -> [a]
-    toList		=  foldl (flip (:)) []
-
-    fromList		:: [a] -> r a
-    fromList		=  Prelude.foldl (flip insert) rempty
-
-    partition'   	:: (Ord k, Relation r) => (a -> k) -> r a -> r (r a)
-    partition' toKey	=  partition toKey >>> snd
-
-    member 		:: (Eq a) => a -> r a -> Bool
-    member a		=  projection (==a) >>> foldl (||) False
-
-    foldlKey		:: (Ord k) => (a -> k) -> (b -> a -> b) -> b -> r a -> r b
-    foldlKey toKey fn z	=  partition' toKey >>> projection (foldl fn z)
-
-    join 		:: (a -> b -> Bool) ->
-                           r a -> r b -> r (a,b)
-    join p ra rb	=  foldl fn  rempty ra
-        where fn acc el =  foldl fn' rempty rb `union` acc
-                 where fn' acc' el' | p el el'  = (el, el') `insert` acc'
-                                    | otherwise = acc'
-    cartProduct 	:: (TupleUnion a b c) => 
-			   r a -> r b -> r c
-    cartProduct ra rb	=  projection (uncurry (|+|)) $ join (const (const True)) ra rb
-
-    sortBy 		:: (a -> a -> Ordering) -> r a -> r a
-    sortBy pred ra	=  let h = head ra
-                           in sortBy pred (selection ((==LT) . (`pred` h)) ra) `union`
-                                  (selection  ((==EQ) . (`pred` h)) ra)  `union`
-                                  sortBy pred (selection ((==GT) . (`pred` h)) ra)
-
-
-
-instance Relation [] where
-    foldl		= Prelude.foldl
-    rempty		= []
-    singleton		= return
-    insert		= (:)
-    partition		= listPartition
-
-listPartition toKey ra = (toKey, fn ra)
-    where fn = map (toKey &&& id) >>>
-               List.sortBy  (compare `on` fst) >>>
-               List.groupBy ((==)    `on` fst) >>>
-               map (map snd)
-
---------------------------------------------------------------------------------------------------------
-
-newtype WrappedRelation r a = WR { getRelation :: r a }
-    deriving(Show, Read)
-
-instance (Relation r) => Functor (WrappedRelation r) where
-    fmap fn (WR ra) = WR (projection fn ra)
-
-instance (Relation r) => Monoid (WrappedRelation r a) where
-    WR ra `mappend` WR rb = WR (ra `union` rb)
-    mempty		  = WR rempty
-
-instance (Relation r) => Monad (WrappedRelation r) where
-    return a   		= WR (singleton a)
-    ma >>= pmb	 	= WR $ foldl union rempty $ getRelation $ fmap (getRelation . pmb) ma
-
---------------------------------------------------------------------------------------------------------
-
-test :: [(Integer, Int)] -> [((Integer, Int), Integer)]
-test = sum(fst) `over` partition(snd)
--- test [(1,1),(2,1),(3,2),(4,2),(10,10)]
-
-test1 :: (TupleUnion (Char, Char) b c) => b -> c
-test1 = (('a','b') |+|)
--- test1 <$> (pure (\(a, b, c, d)->(a,b)) <*> cartProduct [(1,2),(3,4)] [(5,'a')])
-
 --------------------------------------------------------------------------------
 
-mkAgr :: (Relation r) => (b -> a -> b, b) -> (inp -> a) -> r inp -> b
-mkAgr (op,zero) selector = foldl op zero . projection selector
+mkAgr  :: (Relation r) => (outp -> a -> outp, outp) -> (inp -> a) -> r (k,inp) -> r (k,outp)
+mkAgr (op,zero) selector = singleton . foldl op' zero' . projection (id***selector)
+    where op' (_,acc) (k,el) = (k,acc `op` el)
+          zero' = (undefined, zero)
 
-sum 	:: (Num b, Relation r) => (inp -> b) -> r inp -> b
+sum 	:: (Num outp, Relation r) => (inp -> outp) -> r (k,inp) -> r (k,outp)
 sum 	=  mkAgr ((+), 0)
-product :: (Num b, Relation r) => (inp -> b) -> r inp -> b
+product :: (Num outp, Relation r) => (inp -> outp) -> r (k,inp) -> r (k,outp)
 product =  mkAgr ((*), 1)
-count 	:: (Num b, Relation r) => (inp -> a) -> r inp -> b
+count 	:: (Num outp, Relation r) => (inp -> a) -> r (k,inp) -> r (k,outp)
 count 	=  mkAgr (fn, 0)
     where fn acc el = acc + 1
+
+overK :: (Relation r, Eq k) =>
+         (r a -> r b) -> Partition r k a -> r a -> r b
+agr `overK` part = flattenR . projection snd . (agr `over` part)
+
+{-
+overK :: (Relation r, Eq k1) =>
+         (r (k,a) -> r (k,b)) -> (r (k,a) -> ((k,a) -> k1, r (r (k,a)))) -> r (k,a) -> r (k,b)
+(agr `overK'` part) ra = flattenR . projection snd . (agr `over` part) $ ra
+(agr `over` part) $ ra :: r (k1, (r (k,b)))
+-}
+
+
+partitionK :: (Relation r, Ord k1) => (a -> k1) -> Partition r k1 (k, a)
+partitionK fn = partition fn'
+    where fn' = fn . snd
+--sum(employee_id) `overK` partitionK(employee_name) $ employees
+
+-- just value
+v	:: (Relation r) => (a -> b) -> r (k, a) -> r (k, b)
+v	=  projection . (id***)
 
 --------------------------------------------------------------------------------
 
@@ -149,113 +65,47 @@ count 	=  mkAgr (fn, 0)
 -- ... etc
 -- Where  (employee_id `more` val 10)
 
--- TODO
--- hiding (Ord(..))
--- rewrite >=, <=, == ...
 --------------------------------------------------------------------------------
 
 data Employee = Employee { employee_id	 	:: Int
                          , employee_name 	:: String
                          , deprt		:: Int
                          }
-employees = [(Employee 1 "1" 10),(Employee 2 "2" 20)]
+              deriving(Show, Read, Eq, Ord)
 
+newtype EmplPK = EmplPK Int
+    deriving(Show, Read, Eq, Ord)
+toPK = EmplPK . employee_id
+
+employees' = [(Employee 1 "1" 10), (Employee 2 "2" 20), (Employee 3 "3" 20)]
+employees  = map (toPK &&& id) employees'
+
+-- FIXME how to coerce (a -> a1, a -> a1 .. a->an) to (a -> (a1,...an))
+v'	:: (a -> b) -> [(EmplPK, a)] -> [(EmplPK, b)]
+v' 	=  v
+
+mkAgrE  :: (outp -> a -> outp, outp) -> (inp -> a) -> [(EmplPK, inp)] -> [(EmplPK, outp)]
+mkAgrE  = mkAgr
+
+sumE    :: (inp -> Int) -> [(EmplPK, inp)] -> [(EmplPK, Int)]
+sumE 	=  mkAgrE ((+), 0)
+
+--------------------
+-- FIXME
+select :: (Relation r, TupleJoin tuplesOfR (r b), TupleApply sel (r a) tuplesOfR) => 
+          sel -> r a -> r b
+select sel = tjoin' . tapply sel
+
+sel `from` ra = (sel, ra)
+
+_where :: (a, b)-> c -> (a,b,c)
+q `_where` p = q |+ p
+
+run1 tuple = (sel1 tuple) (sel2 tuple)
+run2 tuple = (sel1 tuple) $ (selection (sel3 tuple) (sel2 tuple))
 {-
--- printf-like polymorphism
--- syntax should be
-select (employee_id, employee_name, agr(smth) `over` partition(smthElse))
-            `from` employees 
-            `whereP`  (employee_id <= val 10)
-            `sortBy` (OneTuple employee_id)
-
-select (employee_id, employee_name) 
-   `whereP` ...
-
-select (count(employee_id), count(employee_name)) 
-   `groupBy` (OneTuple employee_id)
-
+run1 $ select (v' employee_id,v' employee_id, sumE(employee_id) `overK` partitionK(employee_name)) `from` employees
+run2 $ select (v' employee_id,v' employee_id, sumE(employee_id) `overK` partitionK(deprt)) `from` employees `_where` (const True)
+...etc
 -}
 
--- class TupleApply t inp outp | t -> outp, t -> inp where
-select :: (TupleApply t inp outp) => 
-          t -> Selection t inp outp
-select t =  Selection t
-
-newtype (TupleApply t i o) => Selection t i o = 
-    Selection { tupleOfFns	:: t }
-
-class Projectable p where
-
-class (Projectable p) => IFrom a b p 				where from :: a -> b -> p
-instance (Projectable p) => IFrom (Selection t i o) (r i) p 	where from   = undefined
-instance (Projectable p) => IFrom (Selection t i o) (r (r i)) p where from   = undefined
-
-whereP :: ((r inp -> r outp), r inp) -> 
-          (inp -> Bool) -> 
-          ((r inp -> r outp), r inp)
-whereP = undefined
-
-groupBy :: (Ord gbKey) =>
-           ((r inp -> r outp), r inp) ->
-           (inp -> gbKey) ->
-           ((r inp -> r outp), r inp)
-groupBy = undefined
-
-
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-{-
-
-data Option gbKey obKey inp outp = Where   { getWhere	:: (inp -> Bool)   }
-                                 | GroupBy { getGroupBy :: (inp -> gbKey)  }
-                                 | OrderBy { getOrderBy :: (outp -> obKey) }
-                                 | Having  { getHaving	:: (outp -> Bool)  }
-
--- FIXME template haskell?
-isOrderBy (OrderBy _) 	= True
-isOrderBy _		= False
-
-isGroupBy (GroupBy _) 	= True
-isGroupBy _ 		= False
-
-isWhere (Where _) 	= True
-isWhere _ 		= False
-
-isHaving (Having _) 	= True
-isHaving _ 		= False
-
-countIn :: (Option a b c d -> Bool) -> [Option a b c d] -> Int
-sel `countIn` options = count(id) $ filter (==True) $ map sel options
-
-
-selectV selectors options = selection whereClause	>>> 
-                            projectToValues 		>>>
-                            sortValues 			>>>
-                            selection havingClause
-    where 
-      (whereClause, groupByClause, orderByCLause, havingClause)
-          = parseOptions options
-      -- FIXME partitate?
-      projectToValues = projection (tapply selectors)
-      sortValues = case orderByCLause of
-                     Nothing -> id
-                     Just fn -> sortBy (compare `on` fn)
-
-parseOptions options 
-    | isOrderBy `countIn` options <= 1 &&
-      isGroupBy `countIn` options <= 1  = (whereClause, groupByClause, 
-                                           orderByCLause, having)
-    | otherwise				= error "wrong options"
-    where 
-      whereClause inp 	= and $ map ($ inp) whereOptions
-      whereOptions 	= map getWhere $ filter isWhere options
-      groupByClause	= liftM getGroupBy $ List.find isGroupBy options
-      orderByCLause	= liftM getOrderBy $ List.find isOrderBy options
-      having outp	= and $ map ($ outp) havingOptions
-      havingOptions 	= map getHaving $ filter isHaving options
--}
-{-
-test'' :: [(Int, String)]
-test'' =  selectV (employee_id, employee_name) (undefined) employees
--}

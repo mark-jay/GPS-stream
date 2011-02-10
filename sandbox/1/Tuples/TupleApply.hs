@@ -7,7 +7,7 @@ import DataDef
 class TupleFn t inp where
     -- ...?
 
-class TupleApply t inp outp | t -> outp, t -> inp where
+class TupleApply t inp outp | t -> outp, t -> inp, inp outp -> t where
     -- Minimal complete definition:
     --      tapply
     tapply :: t -> inp -> outp
