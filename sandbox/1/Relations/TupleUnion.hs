@@ -5,9 +5,8 @@ module TupleUnion(TupleUnion, tunion, (|+|), (|+), (+|))
 import Data.Tuple.All
 
 class TupleUnion a b c | a b -> c where
-        -- Minimal complete definition:
-        --      tunion
-	tunion :: a -> b -> c
+    tunion :: a -> b -> c
+
 (|+|)  :: (TupleUnion a b c) => a -> b -> c
 (|+|)  =  tunion
 

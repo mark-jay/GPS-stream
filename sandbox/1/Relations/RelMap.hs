@@ -56,19 +56,13 @@ fromSeq :: Seq outp -> RelMap inp outp
 fromSeq s = rm
     where rm = RM (const rm) s
 
-feedSeq :: RelMap inp out -> Seq inp -> RelMap inp out
-feedSeq rm@(RM fn _) s = f (Seq.viewl s)
-    where f (left :< rest) = feedSeq (fn left) rest
-          f Seq.EmptyL	   = rm
-
-feedList :: RelMap inp out -> [inp] -> RelMap inp out
-feedList rm [] 	   		= rm
-feedList rm@(RM fn _) (x:xs) 	= feedList (fn x) xs
+feedElms :: (Foldable t) => RelMap inp out -> t inp -> RelMap inp out
+feedElms = foldr (\ el rm -> rmMapper rm el)
 
 foldyRM :: (a -> b -> b) -> b -> RelMap a b
 foldyRM fn zero = RM (mkMapper seqZero) seqZero
     where mkMapper acc el = acc' `seq` RM (mkMapper acc') acc'
-              where acc' = fmap (fn el $!) acc -- FIXME
+              where acc' = Seq.adjust (fn el $!) 0 acc -- FIXME just
           seqZero = Seq.singleton zero
 
 --------------------------------------------------------------------------------
@@ -83,7 +77,7 @@ instance Category RelMap where
 
     rm2@(RM fn2 acc2) . rm1@(RM fn1 acc1) = RM fn3 acc3
         where fn3 inp 	= rm2 . fn1 inp
-              acc3 	= rmAcc $ feedSeq rm2 acc1
+              acc3 	= rmAcc $ feedElms rm2 acc1
 
 instance Relation (RelMap inp) where
     (RM fn1 acc1) `union` rm2@(RM fn2 acc2) = RM fn3 acc3
@@ -93,6 +87,10 @@ instance Relation (RelMap inp) where
     projection fn ra = ra >>> fromFn fn
 
     selection p ra   = ra >>> fromFnMb (toMaybeFn p)
+        where toMaybeFn :: (a -> Bool) -> a -> Maybe a
+              toMaybeFn p a | p a 	  = Just a
+                            | otherwise = Nothing
+
 
     RM fn1 acc1 `minus` RM fn2 acc2 = RM fn3 acc3
         where acc3   = acc1 `seqDiff` acc2

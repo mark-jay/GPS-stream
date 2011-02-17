@@ -24,9 +24,6 @@ instance (Bounded a) => Bounded (Maybe a) where
 
 --------------------------------------------------------------------------------
 ----- utils
-toMaybeFn :: (a -> Bool) -> a -> Maybe a
-toMaybeFn p a | p a 	  = Just a
-              | otherwise = Nothing
 
 -- FIXME write me better
 seqDiff :: (Ord a) => Seq a -> Seq a -> Seq a

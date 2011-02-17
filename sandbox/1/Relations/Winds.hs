@@ -141,18 +141,18 @@ mkTimedList :: (Num a, Enum a) => Int -> IO [(UTCTime, a)]
 mkTimedList n = mapM fn (take n [1..])
     where fn n = getCurrentTime >>= return . (,n)
 
--- by count filter
+-- by count filter(~ 0.258237s)
 main :: IO ()
 main = do
   let rowToProc = Just 20
       t = windowedAggrSeq rowToProc Nothing (Product . sel2)
       test  x = do
          timedList <- mkTimedList x
-         return $ feedList t timedList
+         return $ feedElms t timedList
   timeM $ test 10000
   return ()
 
--- by time filter
+-- by time filter (~0.918319s)
 main1 :: IO ()
 main1 = do
   let rowToProc = Just 20
@@ -161,6 +161,6 @@ main1 = do
           let diff = fst (timedList !! 100) `diffUTCTime` fst (timedList !! 0)
               t = windowedAggrSeq Nothing (Just diff) (mkCount . sel2)
           print diff
-          return $ feedList t timedList
+          return $ feedElms t timedList
   timeM $ test 10000
   return ()

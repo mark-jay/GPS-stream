@@ -28,6 +28,7 @@ getCommand _ 		= Nothing
 vars :: String -> [String]
 vars name = map ((name ++) . show) [1..]
 
+as, outps, fns :: [String]
 as  	= vars "a"
 outps 	= vars "outp"
 fns   	= vars "fn"

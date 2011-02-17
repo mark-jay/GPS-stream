@@ -29,7 +29,7 @@ class Relation r where
                            r a -> r b -> r c
     partition   	:: (Ord k) => (a -> k) -> Partition r k a
 
-    -- 
+    --
 
 sortBy 			=  undefined
 flattenR		=  undefined
@@ -53,10 +53,8 @@ instance Relation [] where
     joinG p f ra rb	= [(a `f` b) | a <- ra, b <- rb, p a b]
 
 listPartition toKey = Partition fn toKey
-    where fn = map (toKey &&& id) 		>>>
-               List.sortBy  (compare `on` fst) 	>>>
-               List.groupBy ((==)    `on` fst) 	>>>
-               map (map snd)
+    where fn = map (map snd) . List.groupBy ((==) `on` fst) .
+               List.sortBy  (compare `on` fst) . map (toKey &&& id)
 
 --------------------------------------------------------------------------------------------------------
 

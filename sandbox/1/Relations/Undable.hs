@@ -1,5 +1,5 @@
 module Undable (Undable(..),
-                Avrg(),  mkAvrg,  getAvrg, 
+                Avrg(),  mkAvrg,  getAvrg,
                 Count(), mkCount, getCount)
     where
 
@@ -20,7 +20,7 @@ class Monoid a => Undable a where
 data Avrg a = Avrg a Int
               deriving(Show, Ord, Eq)
 
-mkAvrg :: (Num a) => a -> Avrg a
+mkAvrg :: (Real a) => a -> Avrg a
 mkAvrg  = flip Avrg 1
 
 getAvrg :: (Real a) => Avrg a -> Double
@@ -29,6 +29,8 @@ getAvrg (Avrg a b) = f a / fromIntegral b
 
 newtype Count a = Count { getCount :: Int }
     deriving(Show, Ord, Eq)
+
+mkCount :: b -> Count a
 mkCount = const (Count 1)
 
 --------------------------------------------------------------------------------
@@ -42,7 +44,7 @@ instance (Fractional a) => Monoid (Avrg a) where
 instance Monoid (Count a) where
     mempty = Count 0
     Count c1 `mappend` Count c2 = Count $ c1 + c2
-    
+
 
 -- Undables
 instance (Num a) => Undable (Sum a) where
