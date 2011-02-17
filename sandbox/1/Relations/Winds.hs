@@ -164,3 +164,17 @@ main1 = do
           return $ feedElms t timedList
   timeM $ test 10000
   return ()
+
+{-
+windowedAggr :: (Timable a, Undable b, Container c, Ord b) =>
+                c (UTCTime, b)		-- emptyContainer to fix it's type
+             -> Maybe Int		-- maxRows
+             -> Maybe NominalDiffTime	-- maxInterval
+             -> (a -> b)		-- selector
+             -> RelMap a b
+
+range (c, t) 	= windowedAggrMap c t
+row c 		= (Just c, Nothing)
+interval t 	= (Nothing, Just t)
+previous  	= id
+-}
