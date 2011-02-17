@@ -2,10 +2,8 @@
 module TupleApply
 	where
 
-import DataDef
-
-class TupleFn t inp where
-    -- ...?
+import Data.Tuple.All
+import TupleJoin
 
 class TupleApply t inp outp | t -> outp, t -> inp, inp outp -> t where
     -- Minimal complete definition:

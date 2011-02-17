@@ -2,14 +2,14 @@
 module TupleUnion(TupleUnion, tunion, (|+|), (|+), (+|))
 	where
 
-import DataDef
+import Data.Tuple.All
 
 class TupleUnion a b c | a b -> c where
         -- Minimal complete definition:
         --      tunion
 	tunion :: a -> b -> c
-	(|+|)  :: a -> b -> c
-	(|+|)  =  tunion
+(|+|)  :: (TupleUnion a b c) => a -> b -> c
+(|+|)  =  tunion
 
 x +| xs = (OneTuple x) |+| xs
 xs |+ x = xs |+| (OneTuple x)

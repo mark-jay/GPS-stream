@@ -8,6 +8,8 @@ module SqlStream.TableMap
     where
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Foldable
 
 import Control.Monad
 import Control.Arrow
@@ -117,6 +119,9 @@ instance Category (TableMap key) where
     id = idQS
     (.) = composeQS
 
+-- elems $ getFn (getFn (a . b) el1) el2 ==
+-- elems $ a . getFn (getFn b el1) el2 
+-- O(n) feedList
 -- assoc composition
 composeQS :: TableMap k b c -> TableMap k1 a b -> TableMap k a c
 q2@(TableMap f2 acc2) `composeQS` q1@(TableMap f1 acc1) = TableMap f3 acc3
