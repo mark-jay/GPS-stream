@@ -19,9 +19,6 @@ oneTuple = mkName "OneTuple"
 cont :: String -> Type
 cont = ConT . mkName
 
-vart :: String -> Type
-vart = VarT . mkName
-
 -- makes tuple as is, without OneTuple Constructor
 mkTupleType' :: [Type] -> Type
 mkTupleType' types = foldl f (TupleT (length types)) types
