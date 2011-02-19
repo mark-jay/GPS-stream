@@ -39,7 +39,7 @@ singleton		=  (`insert` rempty)
 
 join p ra rb		=  joinG p (,) ra rb
 
-cartProduct ra rb	=  projection (uncurry (|+|)) $ join (const (const True)) ra rb
+cartProduct ra rb	=  projection (uncurry (|++|)) $ join (const (const True)) ra rb
 
 ------------------------------------------------------------
 instance Relation [] where
@@ -148,6 +148,6 @@ test = sum(fst) `over` partition(snd)
 -- test [(1,1),(2,1),(3,2),(4,2),(10,10)]
 
 test1 :: (TupleUnion (Char, Char) b c) => b -> c
-test1 = (('a','b') |+|)
+test1 = (('a','b') |++|)
 -- test1 <$> (pure (\(a, b, c, d)->(a,b)) <*> cartProduct [(1,2),(3,4)] [(5,'a')])
 -}
