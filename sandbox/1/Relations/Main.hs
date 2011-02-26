@@ -8,7 +8,7 @@ import TupleApply
 import TupleJoin
 import Relation
 -- import RelMap
-import TupleUnion
+import TupleConcat
 
 import Control.Applicative
 import Control.Arrow
