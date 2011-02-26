@@ -1,5 +1,9 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Tools.TemplateTools where
+module Tools.TemplateTools ( timableInstances
+                           , tapplyInstances
+                           , tconcatInstances
+                           )
+    where
 
 import Language.Haskell.TH.Syntax
 
@@ -7,14 +11,14 @@ mkVars :: String -> [Name]
 mkVars name = map (mkName . (name++) . show) [1..]
 
 as, outps :: [Name]
-as = mkVars "a"
-outps = mkVars "outp"
-
-oneTupleWrap :: Type -> Type
-oneTupleWrap = AppT $ ConT oneTuple
+as         = mkVars "a"
+outps      = mkVars "outp"
 
 oneTuple :: Name
 oneTuple = mkName "OneTuple"
+
+oneTupleWrap :: Type -> Type
+oneTupleWrap = AppT $ ConT oneTuple
 
 cont :: String -> Type
 cont = ConT . mkName
@@ -28,8 +32,7 @@ mkTupleType' types = foldl f (TupleT (length types)) types
 mkTupleType :: [Type] -> Type
 mkTupleType [] = TupleT 0
 mkTupleType [_type] = oneTupleWrap _type
-mkTupleType types = foldl f (TupleT (length types)) types
-    where f acc el = AppT acc el
+mkTupleType types = mkTupleType' types
 
 -- applies type sequentially
 typeApp :: [Type] -> Type
@@ -109,4 +112,3 @@ tconcatInstance (n, m) = InstanceD [] _type
           vars2 = take m . drop n $ as
           vars3 = vars1 ++ vars2
           tconcat = mkName "tconcat"
-
