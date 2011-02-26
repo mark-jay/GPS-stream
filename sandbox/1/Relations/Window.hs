@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts, FlexibleInstances, TupleSections #-}
-module Winds
+module Window
     ( windowedAggrMap
     , windowedAggrSeq
     , windowedFn

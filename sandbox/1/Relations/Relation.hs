@@ -3,7 +3,7 @@ module Relation where
 
 import Control.Arrow
 
-import TupleUnion
+import TupleConcat
 
 import qualified Data.List as List
 import Data.Function
@@ -13,12 +13,11 @@ import Data.Foldable
 import Prelude hiding (foldl, sum, head, elem)
 import qualified Prelude
 
-class Relation r where
+class (Functor r) => Relation r where
     -- relat algebra
     minus 		:: (Ord a) =>
 			   r a -> r a -> r a
     union 		:: r a -> r a -> r a
-    projection	 	:: (a -> b) -> r a -> r b
     selection	 	:: (a -> Bool) -> r a -> r a
 
     -- other
@@ -30,6 +29,8 @@ class Relation r where
     partition   	:: (Ord k) => (a -> k) -> Partition r k a
 
     --
+projection :: (Relation r) => (a -> b) -> r a -> r b
+projection = fmap
 
 sortBy 			=  undefined
 flattenR		=  undefined
@@ -43,7 +44,6 @@ cartProduct ra rb	=  projection (uncurry (|++|)) $ join (const (const True)) ra 
 
 ------------------------------------------------------------
 instance Relation [] where
-    projection		= map
     selection		= filter
     union		= (++)
     minus		= (List.\\)

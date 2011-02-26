@@ -1,14 +1,22 @@
-module Undable (Undable(..),
-                Avrg(),  mkAvrg,  getAvrg,
-                Count(), mkCount, getCount)
+module Group( Group(..)
+            , Avrg(),  mkAvrg,  getAvrg
+            , Count(), mkCount, getCount
+            )
     where
 
 import Data.Monoid
 import Data.Ratio
 
-class Monoid a => Undable a where
+class Monoid a => Group a where
+    --   Minimal complete definition:
+    -- gnegate or rmappend
+
+    gnegate :: a -> a
+    gnegate = (mempty `rmappend`)
+
     -- reversed mappend
     rmappend :: a -> a -> a
+    rmappend x y = x `mappend` gnegate y
 
 {-# RULES
 "rmappend/undo"   forall a b     . 	a `mappend` b `rmappend` b = a
@@ -46,16 +54,16 @@ instance Monoid (Count a) where
     Count c1 `mappend` Count c2 = Count $ c1 + c2
 
 
--- Undables
-instance (Num a) => Undable (Sum a) where
+-- Groups
+instance (Num a) => Group (Sum a) where
     Sum a `rmappend` Sum b = Sum (a - b)
 
-instance (Fractional a) => Undable (Product a) where
+instance (Fractional a) => Group (Product a) where
     Product a `rmappend` Product b = Product (a / b)
 
-instance (Fractional a) => Undable (Avrg a) where
+instance (Fractional a) => Group (Avrg a) where
     Avrg s1 c1 `rmappend` Avrg s2 c2 = Avrg (s1 - s2) (c1 - c2)
 
-instance Undable (Count a) where
+instance Group (Count a) where
     Count c1 `rmappend` Count c2 = Count $ c1 - c2
 --------------------------------------------------------------------------------

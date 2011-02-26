@@ -28,7 +28,7 @@ import Control.Monad.Identity
 import Prelude hiding((.), id, foldl, foldr)
 
 import Relation
-import Undable
+import Group
 import Utils
 import TupleApply
 
@@ -84,13 +84,10 @@ instance Relation (RelMap inp) where
         where acc3   = acc1 >< acc2
               fn3 el = fn1 el `union` fn2 el
 
-    projection fn ra = ra >>> fromFn fn
-
-    selection p ra   = ra >>> fromFnMb (toMaybeFn p)
+    selection p ra   = fromFnMb (toMaybeFn p) . ra
         where toMaybeFn :: (a -> Bool) -> a -> Maybe a
               toMaybeFn p a | p a 	  = Just a
                             | otherwise = Nothing
-
 
     RM fn1 acc1 `minus` RM fn2 acc2 = RM fn3 acc3
         where acc3   = acc1 `seqDiff` acc2
@@ -115,15 +112,14 @@ joinGSeq p s s1 s2 = Utils.flattenS $ fmap fn s1
             fn' el2 acc | p el1 el2  = s el1 el2 <| acc
 
 instance Functor (RelMap inp) where
-    fmap = projection
+    fmap fn ra = fromFn fn . ra
 
 instance Applicative (RelMap inp) where
     pure  = (`insert` rempty)
 
-    RM fn1 acc1 <*> rm2@(RM _ acc2) = RM fn3 acc3
-        where acc3 = flattenS $ fmap fn acc1
-                  where fn f = fmap f acc2
-              fn3 el = fn1 el <*> rm2
+    RM fn1 acc1 <*> rm2@(RM fn2 acc2) = RM fn3 acc3
+        where acc3   = joinGSeq (\_ _-> True) ($) acc1 acc2
+              fn3 el = fn1 el <*> fn2 el
 
 ------------------------------------
 ------ some bad ideas
@@ -132,9 +128,10 @@ instance Monad (RelMap inp) where
     return = pure
 
     -- ignores produced functions
+    -- RelMap inp (RelMap inp outp) -> RelMap inp outp?
     RM fn1 acc1 >>= prm2 = RM fn3 acc3
         where fn3 el = fn1 el >>= prm2
-              acc3 = flattenS . fmap (rmAcc . prm2) $ acc1
+              acc3   = flattenS . fmap (rmAcc . prm2) $ acc1
 
 instance (Read outp) => Read (RelMap inp outp) where
     readsPrec _ str | "RM _ " `List.isPrefixOf` str =
