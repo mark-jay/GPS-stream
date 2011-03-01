@@ -23,7 +23,7 @@ import Data.Tuple.All
 import Control.Arrow
 import Control.Monad
 
-import Undable
+import Group
 import Timable
 import RelMap
 
@@ -54,7 +54,7 @@ instance Container (Map UTCTime) where
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-type WindowedFn a b = (Timable a, Undable b, Ord b) =>
+type WindowedFn a b = (Timable a, Group b, Ord b) =>
     Maybe Int -> Maybe NominalDiffTime -> (a -> b) -> RelMap a b
 
 windowedAggrMap :: WindowedFn a b
@@ -66,7 +66,7 @@ windowedAggrSeq = windowedAggr (cEmpty :: Seq a)
 windowedFn :: (Timable inp) => Maybe Int -> Maybe NominalDiffTime -> RelMap inp inp
 
 --------------------
-windowedAggr :: (Timable a, Undable b, Container c, Ord b) =>
+windowedAggr :: (Timable a, Group b, Container c, Ord b) =>
                 c (UTCTime, b)		-- emptyContainer to fix it's type
              -> Maybe Int		-- maxRows
              -> Maybe NominalDiffTime	-- maxInterval

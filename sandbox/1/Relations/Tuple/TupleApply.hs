@@ -1,11 +1,11 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, TemplateHaskell #-}
-module TupleApply
+module Tuple.TupleApply
 	where
 
-import Data.Tuple.All
-import TupleJoin
-
+import Tuple.TupleJoin
 import Tools.TemplateTools(tapplyInstances)
+
+import Data.Tuple.All
 
 class TupleApply t inp outp | t -> outp, t -> inp, inp outp -> t where
     tapply :: t -> inp -> outp

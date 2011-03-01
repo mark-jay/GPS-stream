@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, FlexibleContexts, TupleSections #-}
-module TupleJoin where
+module Tuple.TupleJoin where
 {-
 -- (r (Row k a),r (Row k b)...) -> r (Row k  (a,b,..))
 

@@ -3,7 +3,7 @@ module Relation where
 
 import Control.Arrow
 
-import TupleConcat
+import Tuple.TupleConcat
 
 import qualified Data.List as List
 import Data.Function

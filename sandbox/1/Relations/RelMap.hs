@@ -30,7 +30,7 @@ import Prelude hiding((.), id, foldl, foldr)
 import Relation
 import Group
 import Utils
-import TupleApply
+import Tuple.TupleApply
 
 --------------------------------------------------------------------------------
 -----------------------------   data structure and api   -----------------------

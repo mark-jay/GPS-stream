@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, TemplateHaskell #-}
-module TupleConcat(TupleConcat, tconcat, (|++|), (|++), (++|))
+module Tuple.TupleConcat(TupleConcat, tconcat, (|++|), (|++), (++|))
 	where
 
 import Data.Tuple.All
