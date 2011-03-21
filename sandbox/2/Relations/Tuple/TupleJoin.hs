@@ -1,13 +1,14 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, FlexibleContexts, TupleSections #-}
 module Tuple.TupleJoin where
-{-
 -- (r (Row k a),r (Row k b)...) -> r (Row k  (a,b,..))
 
+
+{-
 import Relation
 import Data.Function
 import Data.Tuple.All
 
-import TupleUnion
+import Tuple.TupleConcat
 
 import Control.Arrow
 
