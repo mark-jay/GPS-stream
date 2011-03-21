@@ -129,19 +129,3 @@ remL tree = toTree . viewl $ tree
 remR tree = toTree . viewr $ tree
     where toTree EmptyR 	= tree
           toTree (tree' :> _)	= tree'
-
-{-
-data FingerTree v a
-	= Empty
-	| Single a
-	| Deep !v !(Digit a) (FingerTree v (Node v a)) !(Digit a)
-data Node v a = Node2 !v a a | Node3 !v a a a
-	deriving Show
-data Digit a
-    = One a
-    | Two a a
-    | Three a a a
-    | Four a a a a
-    deriving Show
-
--}
