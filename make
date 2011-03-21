@@ -1,0 +1,1 @@
+ghc --make Main -lzmq -L/usr/local/lib -v

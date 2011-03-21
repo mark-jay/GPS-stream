@@ -63,7 +63,9 @@ windowedAggrMap = windowedAggr (cEmpty :: Map UTCTime a)
 windowedAggrSeq :: WindowedFn a b
 windowedAggrSeq = windowedAggr (cEmpty :: Seq a)
 
-windowedFn :: (Timable inp) => Maybe Int -> Maybe NominalDiffTime -> RelMap inp inp
+windowedFn
+  :: (Timable inp) =>
+     Maybe Int -> Maybe NominalDiffTime -> RelMap inp inp
 
 --------------------
 windowedAggr :: (Timable a, Group b, Container c, Ord b) =>

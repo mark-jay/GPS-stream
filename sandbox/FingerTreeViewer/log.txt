@@ -1,0 +1,171 @@
+Deep :
+  Four:
+    3
+    4
+    5
+    6
+  Single 
+    Node3 :
+      7
+      8
+      9
+  One:
+    10
+
+enter a command:
+l 2
+Deep :
+  Two:
+    2
+    3
+  Deep :
+    One:
+      Node3 :
+        4
+        5
+        6
+
+    Empty
+    One:
+      Node3 :
+        7
+        8
+        9
+
+  One:
+    10
+
+enter a command:
+--------------------------------------------------------------------------------
+Deep :
+  Four:
+    -9
+    -8
+    -7
+    -6
+  Deep :
+    Four:
+      Node3 :
+        -5
+        -4
+        -3
+
+      Node3 :
+        -2
+        -1
+        0
+
+      Node3 :
+        1
+        2
+        3
+
+      Node3 :
+        4
+        5
+        6
+
+    Empty
+    One:
+      Node3 :
+        7
+        8
+        9
+
+  One:
+    10
+
+enter a command:
+Deep :
+  Two:
+    -10
+    -9
+  Deep :
+    Two:
+      Node3 :
+        -8
+        -7
+        -6
+
+      Node3 :
+        -5
+        -4
+        -3
+
+    Single 
+      Node3 :
+        Node3 :
+          -2
+          -1
+          0
+
+        Node3 :
+          1
+          2
+          3
+
+        Node3 :
+          4
+          5
+          6
+
+    One:
+      Node3 :
+        7
+        8
+        9
+
+  One:
+    10
+
+enter a command:
+--------------------------------------------------------------------------------
+Deep :
+  One:
+    6
+  Single 
+    Node3 :
+      7
+      8
+      9
+  One:
+    10
+
+enter a command:
+lr
+Deep :
+  Three:
+    7
+    8
+    9
+  Empty
+  One:
+    10
+
+enter a command:
+--------------------------------------------------------------------------------
+Deep :
+  Two:
+    5
+    6
+  Single 
+    Node3 :
+      7
+      8
+      9
+  One:
+    10
+
+enter a command:
+rr
+Deep :
+  Two:
+    5
+    6
+  Empty
+  Three:
+    7
+    8
+    9
+
+enter a command:
