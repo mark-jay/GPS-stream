@@ -13,7 +13,9 @@
 3 Реализация. Внутренние интерфейсы.
 3.1 Классы: стандартные, определенные пользователем.
 3.2 Структуры: RelMap
-3.3 Окна: на моноидах и на группах
+3.3 Окна.
+3.3.1 на моноидах 
+3.3.2 на группах
 4 Тестирование на соответствие требованиям. Графики, сравнения.
 Заключение. Достигнуты ли цели.
 Список использованных источников
@@ -432,15 +434,8 @@ window' принимает
 >  -> (a -> b)
 >  -> RelMapGen
 >     (FingerTree (Max UTCTime, Sum Int, b)) a (UTCTime, Acc b)
->window' tRestr cRestr fn = restrictor
->    where
->      r = mkFTSelector fn
-
->      restrictFT' = restrictFT tRestr cRestr
-
->      restrictor = restrictFT' `seq` RM (restrMapper (rmMapper r))  (rmAcc r)
->      restrMapper mapper el = let RM f acc = mapper el
->                              in RM (restrMapper f) (restrictFT' acc)
+>window' tRestr cRestr fn = restrictor where
+...
 
 windowAggr, window - две похожие функции, с той разницей, что 
 windowAggr сворачивает результат(окно) по моноиде, соответственно
@@ -463,13 +458,8 @@ windowAggr обращается к "b" из служебного поля, ко�
 >  -> Maybe (Int -> (Int, Int))
 >  -> (a -> b)
 >  -> RelMap a b
->windowAggr tRestr cRestr fn = fromFn sel3 . (selector $ window' tRestr cRestr fn)
->    where
->      selector r = RM (mkMapper r) (rToAcc r)
->          where
->            rToAcc = Seq.singleton . FT.measure . rmAcc
->            mkMapper r el = RM (mkMapper r') (rToAcc r')
->                where r' = rmMapper r el
+>windowAggr tRestr cRestr fn = fromFn sel3 . (selector $ window' tRestr cRestr fn) where
+...
 
 window - просто ограничивает результат, не влияя на записи. чтобы вновь воспользоваться
 функцией window' "b" нужно сделать моноидой, поэтому под эту роль сгодиться любой моноид, 
@@ -482,19 +472,14 @@ window - просто ограничивает результат, не влия
 >       -> Maybe (Int     -> (Int, Int))
 >       -> (a -> b)
 >       -> RelMap a b
->window tRestr cRestr fn = selector `rmComp` window' tRestr cRestr (First . Just . fn)
->    where selector :: RelMap (UTCTime, Acc (First b)) b
->          selector = fromFn f
->              where f (_, Acc (First (Just b))) = b
+>window tRestr cRestr fn = selector `rmComp` window' tRestr cRestr (First . Just . fn) where
+...
 
 >mkFTSelector :: (Timable a, Monoid b) =>
 >              (a -> b)
 >           -> RelMapGen (FingerTree (Max UTCTime, Sum Int, b)) a (UTCTime, Acc b)
->mkFTSelector fn = RM (mkMapper FT.empty) FT.empty
->    where
->      f a = (toTime a, Acc $ fn a)
->      mkMapper acc el = RM (mkMapper acc') acc'
->          where acc' = acc FT.|> f el
+>mkFTSelector fn = RM (mkMapper FT.empty) FT.empty where
+...
 
 --------------------------------------
 
@@ -506,38 +491,21 @@ restrictFT - функция, принимающая 2 ограничителя �
 >           -> Maybe (Int     -> (Int, Int))		-- from/to count producer
 >           -> FingerTree (Max UTCTime, Sum Int, b) (UTCTime, Acc b)
 >           -> FingerTree (Max UTCTime, Sum Int, b) (UTCTime, Acc b)
->restrictFT restrT restrC inpFT = (FT.takeUntil tPred . FT.dropUntil dPred $ inpFT)
->    where
->      (Max curTime, Sum count, _) = FT.measure inpFT
-
->      (minIdx, maxIdx)   = Maybe.fromMaybe (const (minBound, maxBound)) restrC $ count
->      (minTime, maxTime) = Maybe.fromMaybe (const (minBound, maxBound)) restrT $ curTime
-
->      -- take/drop while
->      tPred (Max time, Sum number, _) = not (time < maxTime && number < maxIdx)
->      dPred (Max time, Sum number, _) = not (time < minTime || number < minIdx)
+>restrictFT restrT restrC inpFT = (FT.takeUntil tPred . FT.dropUntil dPred $ inpFT) where
+...
 
 ------------------------------------------------------------------------------
 Далее просто набор функций, для удобной работы,
 способы построить ограничители из Integer, NominalDiffTime и тд
 
 >lastSecs :: Integer -> Maybe (UTCTime -> (UTCTime, UTCTime))
->lastSecs n = Just f
->    where
->      f curTime = (minTime, curTime)
->          where minTime = addUTCTime (fromInteger (-n)) curTime
+...
 
 >lastPico :: NominalDiffTime -> Maybe (UTCTime -> (UTCTime, UTCTime))
->lastPico n = Just f
->    where
->      f curTime = (minTime, curTime)
->          where minTime = addUTCTime (-n) curTime
+...
 
 >lastRows :: (Num a, Bounded a) => a -> Maybe (a -> (a, a))
->lastRows n = Just f
->    where
->      f count = (minRow, maxBound)
->          where minRow = count - n + 1
+...
 
 ------------------------------------------------------------------------------
 функции для проверки производительности
