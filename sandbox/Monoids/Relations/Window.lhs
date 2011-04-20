@@ -238,6 +238,17 @@ restrictFT - функция, принимающая 2 ограничителя �
 >  timeM $ test rowToProc
 >  return ()
 
+ агрегатор через функцию windowAggr (~0.422327s)
+
+>testAg2 :: IO ()
+>testAg2 = do
+>  let t = windowAggr Nothing (lastRows rowWind) (Product . sel2)
+>      test  x = do
+>         timedList <- mkTimedList x
+>         return $ feedElms t timedList
+>  timeM $ test rowToProc
+>  return ()
+
  2 агрегатора через композицию (~0.828081s)
 
 >testAg1' :: IO ()
@@ -251,18 +262,6 @@ restrictFT - функция, принимающая 2 ограничителя �
 >         return (r1, r2)
 >  timeM $ test rowToProc
 >  return ()
-
- агрегатор через функцию windowAggr (~0.422327s)
-
->testAg2 :: IO ()
->testAg2 = do
->  let t = windowAggr Nothing (lastRows rowWind) (Product . sel2)
->      test  x = do
->         timedList <- mkTimedList x
->         return $ feedElms t timedList
->  timeM $ test rowToProc
->  return ()
-
 
  2 агрегатора через функцию windowAggr (~0.623249s)
 

@@ -143,29 +143,72 @@ mkTimedList :: (Num a, Enum a) => Int -> IO [(UTCTime, a)]
 mkTimedList n = mapM fn (take n [1..])
     where fn n = getCurrentTime >>= return . (,n)
 
--- by count filter(~ 0.258237s)
-main :: IO ()
-main = do
-  let rowToProc = Just 20
-      t = windowedAggrSeq rowToProc Nothing (Product . sel2)
+rowToProc = 10000
+windSize = Just 50
+
+-- by count filter(~ 0.188237s)
+test :: IO ()
+test = do
+  let t = windowedFn windSize Nothing 
       test  x = do
          timedList <- mkTimedList x
          return $ feedElms t timedList
-  timeM $ test 10000
+  timeM $ test rowToProc
   return ()
 
--- by time filter (~0.918319s)
-main1 :: IO ()
-main1 = do
-  let rowToProc = Just 20
-      test  x = do
+-- by time filter aggreg (~0.918319s)
+testTimeAg :: IO ()
+testTimeAg = do
+  let test  x = do
           timedList <- mkTimedList x
           let diff = fst (timedList !! 100) `diffUTCTime` fst (timedList !! 0)
               t = windowedAggrSeq Nothing (Just diff) (mkCount . sel2)
           print diff
           return $ feedElms t timedList
-  timeM $ test 10000
+  timeM $ test rowToProc
   return ()
+
+-- by count aggreg(~ 0.258237s)
+testAg :: IO ()
+testAg = do
+  let t = windowedAggrSeq windSize Nothing (Product . sel2)
+      test  x = do
+         timedList <- mkTimedList x
+         return $ feedElms t timedList
+  timeM $ test rowToProc
+  return ()
+
+
+-- 2 aggrs by count(~0.658703s)
+
+testAg2 :: IO ()
+testAg2 = do
+  let t = windowedAggrSeq windSize Nothing (Product . sel2)
+      test  x = do
+         timedList1 <- mkTimedList x
+         timedList2 <- mkTimedList x
+         let r1 = feedElms t timedList1
+             r2 = feedElms r1 timedList1
+         return (r1,r2)
+  timeM $ test rowToProc
+  return ()
+
+-- 2 aggrs by time(~2.103793s)
+
+testAg2' :: IO ()
+testAg2' = do
+  let test  x = do
+         timedList1 <- mkTimedList x
+         timedList2 <- mkTimedList x
+         let diff = fst (timedList1 !! 100) `diffUTCTime` fst (timedList1 !! 0)
+             t = windowedAggrSeq Nothing (Just diff) (mkCount . sel2)
+         print diff
+         let r1 = feedElms t timedList1
+             r2 = feedElms r1 timedList1
+         return (r1,r2)
+  timeM $ test rowToProc
+  return ()
+
 
 {-
 windowedAggr :: (Timable a, Undable b, Container c, Ord b) =>
