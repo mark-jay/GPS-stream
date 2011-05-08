@@ -155,16 +155,6 @@ instance (Foldable f, Queue f) => Applicative (RelMapGen f inp) where
         where acc3   = joinGSeq (\_ _-> True) ($) acc1 acc2
               fn3 el = fn1 el <*> fn2 el
 
-
--- let a = fromQueue $ Seq.fromList [1, 2, 3] :: RelMap Int Int
--- let f = \a -> fromQueue $ Seq.fromList [1, a, 3] :: Int -> RelMap Int Int
-instance (Queue f, Foldable f, Functor f) => Monad (RelMapGen f inp) where
-    return = pure
-
-    -- ignores produced functions
-    -- RelMap inp (RelMap inp outp) -> RelMap inp outp?
-    RM _ acc1 >>= prm2 = foldl merge emptyRM . fmap prm2 $ acc1
-
 {-
 ------------------------------------
 ------ some bad ideas
